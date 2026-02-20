@@ -1,0 +1,514 @@
+// ========================================
+// Warstwa językowa — tłumaczenia
+// ========================================
+//
+// Aby dodać nowy język:
+// 1. Skopiuj cały obiekt 'en' lub 'pl' i zmień klucz na kod języka (np. 'de', 'fr')
+// 2. Przetłumacz wszystkie wartości
+// 3. Dodaj nowy kod do CONFIG.AVAILABLE_LANGUAGES w config.js
+// 4. Gotowe — język zostanie automatycznie wykryty z przeglądarki
+//    lub można ustawić CONFIG.LANGUAGE = 'de' aby wymusić
+//
+// ========================================
+
+const TRANSLATIONS = {
+
+    // =====================
+    // POLSKI
+    // =====================
+    pl: {
+        // Nazwa języka (do ewentualnego selectora)
+        language_name: 'Polski',
+        language_flag: '🇵🇱',
+        html_lang: 'pl',
+
+        // Ogólne
+        app_title: 'Dziennik Treningowy',
+        app_title_emoji: '🏋️ Dziennik Treningowy',
+
+        // Przyciski główne
+        btn_add_training: '+ Dodaj trening',
+        btn_edit: '✎ Edytuj',
+        btn_pdf: '⤓ PDF',
+        btn_delete: '✕ Usuń',
+        btn_filters: '🔍 Filtry',
+        btn_data: '💾 Dane',
+        btn_save: 'Zapisz',
+        btn_cancel: 'Anuluj',
+
+        // Ćwiczenia
+        btn_add_exercise: '+ Dodaj ćwiczenie',
+        btn_delete_exercise_title: 'Usuń ćwiczenie',
+        back_to_trainings: '← Powrót do treningów',
+
+        // Eksport/Import
+        data_bar_info: 'Eksportuj dane jako JSON, aby wykonać kopię zapasową lub przenieść między urządzeniami. Zaimportuj wcześniej wyeksportowany plik, aby przywrócić dane.',
+        btn_export_json: '⬇ Eksportuj JSON',
+        btn_import_json: '⬆ Importuj JSON',
+        import_title: 'Importuj dane',
+        import_warning: '⚠️ W jaki sposób chcesz zaimportować?',
+        import_detail: 'Plik zawiera {fileCount} trening(ów). Aktualnie masz {currentCount} trening(ów).',
+        btn_merge: 'Scal (zachowaj istniejące)',
+        btn_replace: 'Zastąp wszystko',
+        import_invalid_format: 'Nieprawidłowy format pliku. Wybierz poprawny plik eksportu Dziennika Treningowego.',
+        import_read_error: 'Błąd odczytu pliku. Upewnij się, że to prawidłowy plik JSON.',
+        export_filename_prefix: 'dziennik_treningowy_kopia',
+        pdf_filename_prefix: 'dziennik_treningowy',
+        pdf_filename_suffix: 'treningow',
+
+        // Filtry
+        filter_name: 'Nazwa',
+        filter_name_placeholder: 'Szukaj nazwy...',
+        filter_from: 'Od',
+        filter_to: 'Do',
+        btn_clear_filters: 'Wyczyść filtry',
+        filter_type: 'Typ',
+        filter_all_types: 'Wszystkie typy',
+        filter_exercise: 'Ćwiczenie',
+        filter_exercise_placeholder: 'Szukaj ćwiczenia...',
+
+        // Zaznaczenie
+        selection_count: 'Zaznaczono: {count}',
+        btn_clear_selection: 'Odznacz wszystko',
+        select_all_title: 'Zaznacz wszystko',
+
+        // Tooltips
+        tooltip_pdf_disabled: 'Wybierz treningi do pobrania PDF',
+        tooltip_pdf_enabled: 'Pobierz {count} trening(ów) jako PDF',
+        tooltip_edit_disabled: 'Zaznacz dokładnie jeden trening do edycji',
+        tooltip_edit_enabled: 'Edytuj zaznaczony trening',
+        tooltip_delete_disabled: 'Wybierz treningi do usunięcia',
+        tooltip_delete_enabled: 'Usuń {count} trening(ów)',
+
+        // Nagłówki tabeli treningów
+        th_name: 'Nazwa',
+        th_date: 'Data',
+        th_exercises: 'Ćw.',
+        th_rating: 'Ocena',
+
+        // Nagłówki tabeli ćwiczeń
+        th_type: 'Typ',
+        th_exercise: 'Ćwiczenie',
+        th_load: 'Obciążenie',
+        th_total: 'Suma',
+
+        // Stany puste
+        empty_no_trainings: 'Brak treningów. Kliknij „+ Dodaj trening", aby rozpocząć!',
+        empty_no_filter_match: 'Żaden trening nie pasuje do filtrów.',
+        empty_no_exercises: 'Brak ćwiczeń. Kliknij „+ Dodaj ćwiczenie", aby dodać!',
+        empty_no_exercise_filter_match: 'Żadne ćwiczenie nie pasuje do filtrów.',
+
+        // Modal treningu
+        modal_add_training: 'Dodaj trening',
+        modal_edit_training: 'Edytuj trening',
+        training_name_label: 'Nazwa treningu',
+        training_name_placeholder: 'np. Dzień górnej partii',
+        training_date_label: 'Data',
+
+        // Pomocniki daty
+        date_today: 'Dziś',
+        date_yesterday: 'Wczoraj',
+        date_days_ago: '{days} dni temu',
+
+        // Ocena
+        avg_rating_label: 'Średnia ocena:',
+        avg_no_data: 'Brak ocen',
+
+        // Potwierdzenia
+        confirm_delete_single: 'Czy na pewno chcesz usunąć ten trening?',
+        confirm_delete_multiple: 'Czy na pewno chcesz usunąć {count} treningów?',
+
+        // Placeholder ćwiczeń
+        select_type_placeholder: '-- Typ --',
+        select_exercise_placeholder: '-- Ćwiczenie --',
+        load_placeholder: 'np. 50kg',
+
+        // PDF
+        pdf_total_exercises: 'Liczba cwiczen',
+        pdf_total_reps: 'Suma powtorzen',
+        pdf_no_exercises: 'Brak cwiczen w tym treningu.',
+        pdf_uncategorized: 'Bez kategorii',
+        pdf_header_exercise: 'Cwiczenie',
+        pdf_header_load: 'Obciazenie',
+        pdf_header_total: 'Suma',
+        pdf_footer: 'Dziennik Treningowy — Wygenerowano {date} — Strona {page} z {total}',
+
+        // Locale daty
+        date_locale: 'pl-PL',
+
+        // Kategorie ćwiczeń
+        category_chest: 'Klatka piersiowa',
+        category_back: 'Plecy',
+        category_shoulders: 'Barki',
+        category_legs: 'Nogi',
+        category_arms: 'Ramiona',
+        category_core: 'Brzuch',
+        category_cardio: 'Kardio',
+
+        // Nazwy ćwiczeń
+        ex_bench_press: 'Wyciskanie na ławce',
+        ex_incline_bench_press: 'Wyciskanie na ławce skośnej',
+        ex_decline_bench_press: 'Wyciskanie na ławce ujemnej',
+        ex_dumbbell_fly: 'Rozpiętki z hantlami',
+        ex_cable_crossover: 'Krzyżowanie linek',
+        ex_push_up: 'Pompki',
+        ex_chest_dip: 'Dipy na klatkę',
+        ex_deadlift: 'Martwy ciąg',
+        ex_pull_up: 'Podciąganie na drążku',
+        ex_chin_up: 'Podciąganie podchwytem',
+        ex_barbell_row: 'Wiosłowanie sztangą',
+        ex_dumbbell_row: 'Wiosłowanie hantlem',
+        ex_lat_pulldown: 'Ściąganie drążka wyciągu',
+        ex_seated_cable_row: 'Wiosłowanie siedząc',
+        ex_t_bar_row: 'Wiosłowanie T-bar',
+        ex_overhead_press: 'Wyciskanie nad głowę',
+        ex_dumbbell_shoulder_press: 'Wyciskanie hantli siedząc',
+        ex_lateral_raise: 'Unoszenie hantli bokiem',
+        ex_front_raise: 'Unoszenie hantli przodem',
+        ex_rear_delt_fly: 'Odwodzenie hantli w opadzie',
+        ex_arnold_press: 'Wyciskanie Arnolda',
+        ex_upright_row: 'Wiosłowanie pionowe',
+        ex_face_pull: 'Face pull',
+        ex_squat: 'Przysiady',
+        ex_front_squat: 'Przysiady przednie',
+        ex_leg_press: 'Prasa nożna',
+        ex_lunges: 'Wykroki',
+        ex_romanian_deadlift: 'Martwy ciąg rumuński',
+        ex_leg_extension: 'Prostowanie nóg',
+        ex_leg_curl: 'Uginanie nóg',
+        ex_calf_raise: 'Wspięcia na palce',
+        ex_bulgarian_split_squat: 'Bułgarskie przysiady',
+        ex_hip_thrust: 'Hip thrust',
+        ex_bicep_curl: 'Uginanie ramion ze sztangą',
+        ex_hammer_curl: 'Uginanie ramion młotkowe',
+        ex_preacher_curl: 'Uginanie na modlitewniku',
+        ex_tricep_dip: 'Dipy na triceps',
+        ex_tricep_pushdown: 'Prostowanie ramion na wyciągu',
+        ex_overhead_tricep_extension: 'Prostowanie ramion nad głową',
+        ex_skull_crusher: 'Francuzy',
+        ex_concentration_curl: 'Uginanie w skupieniu',
+        ex_plank: 'Plank',
+        ex_crunch: 'Brzuszki',
+        ex_russian_twist: 'Skręty rosyjskie',
+        ex_leg_raise: 'Unoszenie nóg',
+        ex_ab_wheel_rollout: 'Kółko do brzucha',
+        ex_mountain_climber: 'Wspinaczka górska',
+        ex_dead_bug: 'Martwy robak',
+        ex_hanging_knee_raise: 'Unoszenie kolan w zwisie',
+        ex_running: 'Bieganie',
+        ex_cycling: 'Jazda na rowerze',
+        ex_rowing: 'Wiosłowanie',
+        ex_jump_rope: 'Skakanka',
+        ex_elliptical: 'Orbitrek',
+        ex_stair_climber: 'Wchodzenie po schodach',
+        ex_swimming: 'Pływanie',
+        ex_burpees: 'Burpees'
+    },
+
+    // =====================
+    // ENGLISH
+    // =====================
+    en: {
+        language_name: 'English',
+        language_flag: '🇬🇧',
+        html_lang: 'en',
+
+        app_title: 'Gym Tracker',
+        app_title_emoji: '🏋️ Gym Tracker',
+
+        btn_add_training: '+ Add Training',
+        btn_edit: '✎ Edit',
+        btn_pdf: '⤓ PDF',
+        btn_delete: '✕ Delete',
+        btn_filters: '🔍 Filters',
+        btn_data: '💾 Data',
+        btn_save: 'Save',
+        btn_cancel: 'Cancel',
+
+        btn_add_exercise: '+ Add Exercise',
+        btn_delete_exercise_title: 'Delete exercise',
+        back_to_trainings: '← Back to Trainings',
+
+        data_bar_info: 'Export your data as JSON to back up or transfer between devices. Import a previously exported file to restore.',
+        btn_export_json: '⬇ Export JSON',
+        btn_import_json: '⬆ Import JSON',
+        import_title: 'Import Data',
+        import_warning: '⚠️ How would you like to import?',
+        import_detail: 'File contains {fileCount} training(s). You currently have {currentCount} training(s).',
+        btn_merge: 'Merge (keep existing)',
+        btn_replace: 'Replace all',
+        import_invalid_format: 'Invalid file format. Please select a valid Gym Tracker export file.',
+        import_read_error: 'Error reading file. Please ensure it is a valid JSON file.',
+        export_filename_prefix: 'gym_tracker_backup',
+        pdf_filename_prefix: 'gym_tracker',
+        pdf_filename_suffix: 'trainings',
+
+        filter_name: 'Name',
+        filter_name_placeholder: 'Search name...',
+        filter_from: 'From',
+        filter_to: 'To',
+        btn_clear_filters: 'Clear Filters',
+        filter_type: 'Type',
+        filter_all_types: 'All Types',
+        filter_exercise: 'Exercise',
+        filter_exercise_placeholder: 'Search exercise...',
+
+        selection_count: 'Selected: {count}',
+        btn_clear_selection: 'Clear selection',
+        select_all_title: 'Select all',
+
+        tooltip_pdf_disabled: 'Select trainings to download PDF',
+        tooltip_pdf_enabled: 'Download {count} training(s) as PDF',
+        tooltip_edit_disabled: 'Select exactly one training to edit',
+        tooltip_edit_enabled: 'Edit selected training',
+        tooltip_delete_disabled: 'Select trainings to delete',
+        tooltip_delete_enabled: 'Delete {count} training(s)',
+
+        th_name: 'Name',
+        th_date: 'Date',
+        th_exercises: 'Ex.',
+        th_rating: 'Rating',
+
+        th_type: 'Type',
+        th_exercise: 'Exercise',
+        th_load: 'Load',
+        th_total: 'Total',
+
+        empty_no_trainings: 'No trainings yet. Click "+ Add Training" to get started!',
+        empty_no_filter_match: 'No trainings match your filters.',
+        empty_no_exercises: 'No exercises yet. Click "+ Add Exercise" to add one!',
+        empty_no_exercise_filter_match: 'No exercises match your filters.',
+
+        modal_add_training: 'Add Training',
+        modal_edit_training: 'Edit Training',
+        training_name_label: 'Training Name',
+        training_name_placeholder: 'e.g., Upper Body Day',
+        training_date_label: 'Date',
+
+        date_today: 'Today',
+        date_yesterday: 'Yesterday',
+        date_days_ago: '{days} days ago',
+
+        avg_rating_label: 'Average Rating:',
+        avg_no_data: 'No ratings yet',
+
+        confirm_delete_single: 'Are you sure you want to delete this training?',
+        confirm_delete_multiple: 'Are you sure you want to delete {count} trainings?',
+
+        select_type_placeholder: '-- Type --',
+        select_exercise_placeholder: '-- Exercise --',
+        load_placeholder: 'e.g., 50kg',
+
+        pdf_total_exercises: 'Total exercises',
+        pdf_total_reps: 'Total repetitions',
+        pdf_no_exercises: 'No exercises recorded for this training.',
+        pdf_uncategorized: 'Uncategorized',
+        pdf_header_exercise: 'Exercise',
+        pdf_header_load: 'Load',
+        pdf_header_total: 'Total',
+        pdf_footer: 'Gym Tracker — Generated {date} — Page {page} of {total}',
+
+        date_locale: 'en-US',
+
+        category_chest: 'Chest',
+        category_back: 'Back',
+        category_shoulders: 'Shoulders',
+        category_legs: 'Legs',
+        category_arms: 'Arms',
+        category_core: 'Core',
+        category_cardio: 'Cardio',
+
+        ex_bench_press: 'Bench Press',
+        ex_incline_bench_press: 'Incline Bench Press',
+        ex_decline_bench_press: 'Decline Bench Press',
+        ex_dumbbell_fly: 'Dumbbell Fly',
+        ex_cable_crossover: 'Cable Crossover',
+        ex_push_up: 'Push-Up',
+        ex_chest_dip: 'Chest Dip',
+        ex_deadlift: 'Deadlift',
+        ex_pull_up: 'Pull-Up',
+        ex_chin_up: 'Chin-Up',
+        ex_barbell_row: 'Barbell Row',
+        ex_dumbbell_row: 'Dumbbell Row',
+        ex_lat_pulldown: 'Lat Pulldown',
+        ex_seated_cable_row: 'Seated Cable Row',
+        ex_t_bar_row: 'T-Bar Row',
+        ex_overhead_press: 'Overhead Press',
+        ex_dumbbell_shoulder_press: 'Dumbbell Shoulder Press',
+        ex_lateral_raise: 'Lateral Raise',
+        ex_front_raise: 'Front Raise',
+        ex_rear_delt_fly: 'Rear Delt Fly',
+        ex_arnold_press: 'Arnold Press',
+        ex_upright_row: 'Upright Row',
+        ex_face_pull: 'Face Pull',
+        ex_squat: 'Squat',
+        ex_front_squat: 'Front Squat',
+        ex_leg_press: 'Leg Press',
+        ex_lunges: 'Lunges',
+        ex_romanian_deadlift: 'Romanian Deadlift',
+        ex_leg_extension: 'Leg Extension',
+        ex_leg_curl: 'Leg Curl',
+        ex_calf_raise: 'Calf Raise',
+        ex_bulgarian_split_squat: 'Bulgarian Split Squat',
+        ex_hip_thrust: 'Hip Thrust',
+        ex_bicep_curl: 'Bicep Curl',
+        ex_hammer_curl: 'Hammer Curl',
+        ex_preacher_curl: 'Preacher Curl',
+        ex_tricep_dip: 'Tricep Dip',
+        ex_tricep_pushdown: 'Tricep Pushdown',
+        ex_overhead_tricep_extension: 'Overhead Tricep Extension',
+        ex_skull_crusher: 'Skull Crusher',
+        ex_concentration_curl: 'Concentration Curl',
+        ex_plank: 'Plank',
+        ex_crunch: 'Crunch',
+        ex_russian_twist: 'Russian Twist',
+        ex_leg_raise: 'Leg Raise',
+        ex_ab_wheel_rollout: 'Ab Wheel Rollout',
+        ex_mountain_climber: 'Mountain Climber',
+        ex_dead_bug: 'Dead Bug',
+        ex_hanging_knee_raise: 'Hanging Knee Raise',
+        ex_running: 'Running',
+        ex_cycling: 'Cycling',
+        ex_rowing: 'Rowing',
+        ex_jump_rope: 'Jump Rope',
+        ex_elliptical: 'Elliptical',
+        ex_stair_climber: 'Stair Climber',
+        ex_swimming: 'Swimming',
+        ex_burpees: 'Burpees'
+    }
+};
+
+// ========================================
+// Automatyczne wykrywanie języka
+// ========================================
+
+/**
+ * Ustala aktywny język w kolejności priorytetów:
+ * 1. Ręczne ustawienie w localStorage (użytkownik wybrał język)
+ * 2. CONFIG.LANGUAGE jeśli nie jest 'auto'
+ * 3. Język przeglądarki (navigator.language / navigator.languages)
+ * 4. CONFIG.FALLBACK_LANGUAGE ('en')
+ */
+function detectLanguage() {
+    // 1. Sprawdź localStorage (ręczny wybór użytkownika)
+    if (CONFIG.LANGUAGE_STORAGE_KEY) {
+        const saved = localStorage.getItem(CONFIG.LANGUAGE_STORAGE_KEY);
+        if (saved && TRANSLATIONS[saved]) {
+            return saved;
+        }
+    }
+
+    // 2. Jeśli wymuszony w konfiguracji
+    if (CONFIG.LANGUAGE !== 'auto' && TRANSLATIONS[CONFIG.LANGUAGE]) {
+        return CONFIG.LANGUAGE;
+    }
+
+    // 3. Wykryj z przeglądarki
+    const browserLanguages = navigator.languages
+        ? [...navigator.languages]
+        : [navigator.language || navigator.userLanguage || ''];
+
+    for (const browserLang of browserLanguages) {
+        // Sprawdź pełny kod (np. 'pl-PL' → 'pl-PL')
+        const full = browserLang.toLowerCase();
+        if (TRANSLATIONS[full]) return full;
+
+        // Sprawdź bazowy kod (np. 'pl-PL' → 'pl')
+        const base = full.split('-')[0];
+        if (TRANSLATIONS[base]) return base;
+    }
+
+    // 4. Fallback
+    return CONFIG.FALLBACK_LANGUAGE;
+}
+
+// Ustaw aktywny język
+const _activeLanguage = detectLanguage();
+
+/**
+ * Zwraca kod aktywnego języka
+ */
+function getActiveLanguage() {
+    return _activeLanguage;
+}
+
+/**
+ * Zapisz preferencję języka i przeładuj stronę
+ */
+function setLanguage(langCode) {
+    if (!TRANSLATIONS[langCode]) return;
+    localStorage.setItem(CONFIG.LANGUAGE_STORAGE_KEY, langCode);
+    window.location.reload();
+}
+
+// ========================================
+// Funkcje tłumaczeń
+// ========================================
+
+/**
+ * Pobierz tłumaczenie dla klucza. Obsługuje placeholdery {key}.
+ * t('selection_count', { count: 5 }) → "Zaznaczono: 5" / "Selected: 5"
+ */
+function t(key, params) {
+    const lang = TRANSLATIONS[_activeLanguage] || TRANSLATIONS[CONFIG.FALLBACK_LANGUAGE];
+    let text = lang[key];
+
+    // Fallback do angielskiego jeśli klucz nie istnieje w aktywnym języku
+    if (text === undefined && _activeLanguage !== CONFIG.FALLBACK_LANGUAGE) {
+        const fallback = TRANSLATIONS[CONFIG.FALLBACK_LANGUAGE];
+        text = fallback ? fallback[key] : key;
+    }
+
+    if (text === undefined) text = key;
+
+    if (params) {
+        Object.keys(params).forEach(p => {
+            text = text.replace(new RegExp(`\\{${p}\\}`, 'g'), params[p]);
+        });
+    }
+    return text;
+}
+
+/**
+ * Przetłumacz klucz kategorii (np. 'chest' → 'Klatka piersiowa' / 'Chest')
+ */
+function tCategory(categoryKey) {
+    return t('category_' + categoryKey);
+}
+
+/**
+ * Przetłumacz klucz ćwiczenia (np. 'bench_press' → 'Wyciskanie na ławce' / 'Bench Press')
+ */
+function tExercise(exerciseKey) {
+    return t('ex_' + exerciseKey);
+}
+
+/**
+ * Przetłumacz etykietę pomocnika daty
+ */
+function tDateHelper(offset) {
+    if (offset === 0) return t('date_today');
+    if (offset === -1) return t('date_yesterday');
+    return t('date_days_ago', { days: Math.abs(offset) });
+}
+
+/**
+ * Pobierz przetłumaczone dane ćwiczeń
+ */
+function getLocalizedExerciseData() {
+    const result = {};
+    Object.keys(CONFIG.EXERCISE_DATA).forEach(catKey => {
+        result[tCategory(catKey)] = CONFIG.EXERCISE_DATA[catKey].map(exKey => tExercise(exKey));
+    });
+    return result;
+}
+
+/**
+ * Ustaw atrybut lang na <html> zgodnie z aktywnym językiem
+ */
+(function setHtmlLang() {
+    const htmlLang = t('html_lang');
+    if (htmlLang && htmlLang !== 'html_lang') {
+        document.documentElement.lang = htmlLang;
+    }
+})();

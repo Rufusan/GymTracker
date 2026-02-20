@@ -1,7 +1,7 @@
 {
-  "name": "Gym Tracker",
-  "short_name": "GymTracker",
-  "description": "Track your gym trainings, exercises, series and repetitions",
+  "name": "Dziennik Treningowy",
+  "short_name": "Treningi",
+  "description": "Śledź swoje treningi, ćwiczenia, serie i powtórzenia",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0d1117",

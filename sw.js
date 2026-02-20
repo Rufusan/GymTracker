@@ -1,9 +1,11 @@
-const CACHE_NAME = 'gym-tracker-v1';
+const CACHE_NAME = 'gym-tracker-v2';
 
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
   './training.html',
+  './config.js',
+  './lang.js',
   './app.js',
   './styles.css',
   './manifest.json',
@@ -11,69 +13,33 @@ const ASSETS_TO_CACHE = [
   './icons/icon-512.png'
 ];
 
-// Install: cache core assets
 self.addEventListener('install', (event) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => {
-      return cache.addAll(ASSETS_TO_CACHE);
-    })
-  );
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS_TO_CACHE)));
   self.skipWaiting();
 });
 
-// Activate: clean up old caches
 self.addEventListener('activate', (event) => {
-  event.waitUntil(
-    caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
-      );
-    })
-  );
+  event.waitUntil(caches.keys().then(names => Promise.all(names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n)))));
   self.clients.claim();
 });
 
-// Fetch: serve from cache first, fall back to network
 self.addEventListener('fetch', (event) => {
-  // Skip non-GET requests
   if (event.request.method !== 'GET') return;
-
-  // Skip CDN requests (jsPDF) — always fetch from network
   if (event.request.url.includes('cdnjs.cloudflare.com')) {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match(event.request))
-    );
+    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
     return;
   }
-
   event.respondWith(
-    caches.match(event.request).then((cachedResponse) => {
-      if (cachedResponse) {
-        // Return cached version, but also update cache in background
-        const fetchPromise = fetch(event.request).then((networkResponse) => {
-          if (networkResponse && networkResponse.status === 200) {
-            const responseClone = networkResponse.clone();
-            caches.open(CACHE_NAME).then((cache) => {
-              cache.put(event.request, responseClone);
-            });
-          }
-          return networkResponse;
+    caches.match(event.request).then(cached => {
+      if (cached) {
+        fetch(event.request).then(resp => {
+          if (resp && resp.status === 200) caches.open(CACHE_NAME).then(c => c.put(event.request, resp.clone()));
         }).catch(() => {});
-
-        return cachedResponse;
+        return cached;
       }
-
-      // Not in cache — fetch from network and cache it
-      return fetch(event.request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200) {
-          const responseClone = networkResponse.clone();
-          caches.open(CACHE_NAME).then((cache) => {
-            cache.put(event.request, responseClone);
-          });
-        }
-        return networkResponse;
+      return fetch(event.request).then(resp => {
+        if (resp && resp.status === 200) { const cl = resp.clone(); caches.open(CACHE_NAME).then(c => c.put(event.request, cl)); }
+        return resp;
       });
     })
   );
