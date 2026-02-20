@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Generate PWA Icons</title>
+    <style>
+        body {
+            font-family: -apple-system, sans-serif;
+            background: #0d1117;
+            color: #e6edf3;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+        }
+        h1 { margin-bottom: 1rem; }
+        p { color: #8b949e; margin-bottom: 2rem; text-align: center; }
+        .icons { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
+        .icon-item { text-align: center; }
+        .icon-item canvas { border: 1px solid #30363d; border-radius: 8px; }
+        .icon-item a {
+            display: block; margin-top: 6px;
+            color: #58a6ff; text-decoration: none; font-size: 0.85rem;
+        }
+        .icon-item a:hover { text-decoration: underline; }
+        button {
+            margin-top: 2rem; padding: 12px 32px;
+            background: #238636; color: #fff; border: none;
+            border-radius: 8px; font-size: 1rem; font-weight: 600;
+            cursor: pointer;
+        }
+        button:hover { background: #2ea043; }
+    </style>
+</head>
+<body>
+    <h1>🏋️ PWA Icon Generator</h1>
+    <p>Click "Generate & Download All" to create all icon sizes.<br>Then place them in an <code>icons/</code> folder next to your HTML files.</p>
+    <div class="icons" id="iconsContainer"></div>
+    <button id="generateBtn">Generate & Download All</button>
+
+    <script>
+        const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
+
+        function drawIcon(size) {
+            const canvas = document.createElement('canvas');
+            canvas.width = size;
+            canvas.height = size;
+            const ctx = canvas.getContext('2d');
+
+            // Background
+            const gradient = ctx.createLinearGradient(0, 0, size, size);
+            gradient.addColorStop(0, '#238636');
+            gradient.addColorStop(1, '#1a6b2b');
+            ctx.fillStyle = gradient;
+
+            // Rounded rect
+            const r = size * 0.15;
+            ctx.beginPath();
+            ctx.moveTo(r, 0);
+            ctx.lineTo(size - r, 0);
+            ctx.quadraticCurveTo(size, 0, size, r);
+            ctx.lineTo(size, size - r);
+            ctx.quadraticCurveTo(size, size, size - r, size);
+            ctx.lineTo(r, size);
+            ctx.quadraticCurveTo(0, size, 0, size - r);
+            ctx.lineTo(0, r);
+            ctx.quadraticCurveTo(0, 0, r, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            // Dumbbell icon
+            const cx = size / 2;
+            const cy = size / 2;
+            const scale = size / 512;
+
+            ctx.strokeStyle = '#ffffff';
+            ctx.fillStyle = '#ffffff';
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            // Bar
+            const barWidth = 200 * scale;
+            const barHeight = 20 * scale;
+            ctx.fillRect(cx - barWidth / 2, cy - barHeight / 2, barWidth, barHeight);
+
+            // Weights
+            const weightWidth = 40 * scale;
+            const weightHeight = 140 * scale;
+            const innerWeightHeight = 100 * scale;
+            const offset1 = 80 * scale;
+            const offset2 = 120 * scale;
+
+            // Left weights
+            ctx.beginPath();
+            ctx.roundRect(cx - offset1 - weightWidth / 2, cy - innerWeightHeight / 2, weightWidth, innerWeightHeight, 6 * scale);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.roundRect(cx - offset2 - weightWidth / 2, cy - weightHeight / 2, weightWidth, weightHeight, 6 * scale);
+            ctx.fill();
+
+            // Right weights
+            ctx.beginPath();
+            ctx.roundRect(cx + offset1 - weightWidth / 2, cy - innerWeightHeight / 2, weightWidth, innerWeightHeight, 6 * scale);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.roundRect(cx + offset2 - weightWidth / 2, cy - weightHeight / 2, weightWidth, weightHeight, 6 * scale);
+            ctx.fill();
+
+            return canvas;
+        }
+
+        function downloadCanvas(canvas, filename) {
+            const link = document.createElement('a');
+            link.download = filename;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+        }
+
+        // Render previews
+        const container = document.getElementById('iconsContainer');
+        sizes.forEach(size => {
+            const canvas = drawIcon(size);
+            const div = document.createElement('div');
+            div.className = 'icon-item';
+
+            const preview = drawIcon(Math.min(size, 128));
+            div.appendChild(preview);
+
+            const label = document.createElement('a');
+            label.href = '#';
+            label.textContent = `icon-${size}.png`;
+            label.addEventListener('click', (e) => {
+                e.preventDefault();
+                downloadCanvas(drawIcon(size), `icon-${size}.png`);
+            });
+            div.appendChild(label);
+
+            container.appendChild(div);
+        });
+
+        // Download all
+        document.getElementById('generateBtn').addEventListener('click', () => {
+            sizes.forEach((size, i) => {
+                setTimeout(() => {
+                    downloadCanvas(drawIcon(size), `icon-${size}.png`);
+                }, i * 200);
+            });
+        });
+    </script>
+</body>
+</html>

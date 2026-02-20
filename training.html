@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Training Detail - Gym Tracker</title>
+    <link rel="stylesheet" href="styles.css">
+	<link rel="manifest" href="manifest.json">
+	<meta name="theme-color" content="#238636">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+	<meta name="apple-mobile-web-app-title" content="Gym Tracker">
+	<link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body>
+    <div class="container">
+        <a href="index.html" class="back-link">← Back to Trainings</a>
+        <h1 id="trainingTitle">Training</h1>
+        <p id="trainingDate" class="subtitle"></p>
+        <div class="training-avg-rating" id="trainingAvgRating"></div>
+
+        <div class="top-actions">
+            <button class="btn btn-primary" id="addExerciseBtn">+ Add Exercise</button>
+            <button class="btn btn-secondary btn-toggle-filters" id="toggleExFiltersBtn">🔍 Filters</button>
+        </div>
+
+        <!-- Exercise Filters -->
+        <div class="filters-bar collapsed" id="exerciseFiltersBar">
+            <div class="filter-group">
+                <label for="filterType">Type</label>
+                <select id="filterType">
+                    <option value="">All Types</option>
+                </select>
+            </div>
+            <div class="filter-group">
+                <label for="filterExercise">Exercise</label>
+                <input type="text" id="filterExercise" placeholder="Search exercise...">
+            </div>
+            <button class="btn btn-secondary btn-small" id="clearExerciseFiltersBtn">Clear Filters</button>
+        </div>
+
+        <div class="table-wrapper">
+            <table id="exercisesTable">
+                <thead>
+                    <tr>
+                        <th class="sortable" data-sort="type">Type <span class="sort-icon" id="sortIconType"></span></th>
+                        <th class="sortable" data-sort="name">Exercise <span class="sort-icon" id="sortIconExName"></span></th>
+                        <th class="th-series">S1</th>
+                        <th class="th-series">S2</th>
+                        <th class="th-series">S3</th>
+                        <th class="th-series">S4</th>
+                        <th class="th-series">S5</th>
+                        <th class="th-series">S6</th>
+                        <th class="sortable th-total" data-sort="total">Total <span class="sort-icon" id="sortIconExTotal"></span></th>
+                        <th class="sortable th-rating" data-sort="rating">Rating <span class="sort-icon" id="sortIconExRating"></span></th>
+                        <th class="th-action"></th>
+                    </tr>
+                </thead>
+                <tbody id="exercisesBody">
+                </tbody>
+            </table>
+        </div>
+        <p id="emptyMessage" class="empty-message">No exercises yet. Click "+ Add Exercise" to add one!</p>
+    </div>
+
+    <script src="app.js"></script>
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const trainingId = params.get('id');
+
+        if (!trainingId) {
+            window.location.href = 'index.html';
+        }
+
+        const exercisesBody = document.getElementById('exercisesBody');
+        const emptyMessage = document.getElementById('emptyMessage');
+        const filterType = document.getElementById('filterType');
+        const filterExercise = document.getElementById('filterExercise');
+        const exerciseFiltersBar = document.getElementById('exerciseFiltersBar');
+        const toggleExFiltersBtn = document.getElementById('toggleExFiltersBtn');
+        const trainingAvgRating = document.getElementById('trainingAvgRating');
+
+        let exSortColumn = null;
+        let exSortDirection = 'asc';
+
+        toggleExFiltersBtn.addEventListener('click', () => {
+            exerciseFiltersBar.classList.toggle('collapsed');
+            toggleExFiltersBtn.classList.toggle('active');
+        });
+
+        function getTraining() {
+            return getTrainings().find(t => t.id === trainingId);
+        }
+
+        function getTotalReps(exercise) {
+            const s = exercise.series || [null, null, null, null, null, null];
+            let total = 0;
+            for (let i = 0; i < MAX_SERIES; i++) {
+                if (s[i] != null && !isNaN(s[i])) {
+                    total += s[i];
+                }
+            }
+            return total;
+        }
+
+        function renderHeader() {
+            const training = getTraining();
+            if (!training) {
+                window.location.href = 'index.html';
+                return;
+            }
+            document.getElementById('trainingTitle').textContent = `🏋️ ${training.name}`;
+            const date = new Date(training.date + 'T00:00:00');
+            document.getElementById('trainingDate').textContent = date.toLocaleDateString('en-US', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            });
+            document.title = `${training.name} - Gym Tracker`;
+            updateAvgRatingDisplay();
+        }
+
+        function updateAvgRatingDisplay() {
+            const training = getTraining();
+            if (!training) return;
+            const avg = getAverageRating(training);
+            if (training.exercises.length === 0 || avg === 0) {
+                trainingAvgRating.innerHTML = '<span class="avg-label">Average Rating:</span> <span class="avg-no-data">No ratings yet</span>';
+            } else {
+                trainingAvgRating.innerHTML = `<span class="avg-label">Average Rating:</span> ${renderStarsReadonly(avg)} <span class="avg-value">(${avg.toFixed(1)}/5)</span>`;
+            }
+        }
+
+        function populateFilterTypeDropdown() {
+            const current = filterType.value;
+            filterType.innerHTML = '<option value="">All Types</option>';
+            Object.keys(EXERCISE_DATA).forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = type;
+                filterType.appendChild(option);
+            });
+            filterType.value = current;
+        }
+
+        function buildTypeOptions(selectedType) {
+            let html = '<option value="">-- Type --</option>';
+            Object.keys(EXERCISE_DATA).forEach(type => {
+                const selected = type === selectedType ? 'selected' : '';
+                html += `<option value="${type}" ${selected}>${type}</option>`;
+            });
+            return html;
+        }
+
+        function buildExerciseOptions(type, selectedName) {
+            let html = '<option value="">-- Exercise --</option>';
+            if (type && EXERCISE_DATA[type]) {
+                EXERCISE_DATA[type].forEach(name => {
+                    const selected = name === selectedName ? 'selected' : '';
+                    html += `<option value="${name}" ${selected}>${name}</option>`;
+                });
+            }
+            return html;
+        }
+
+        function getFilteredAndSortedExercises(training) {
+            let exercises = training.exercises.map((ex, i) => ({ ...ex, _origIndex: i }));
+
+            const typeFilter = filterType.value;
+            if (typeFilter) exercises = exercises.filter(ex => ex.type === typeFilter);
+
+            const nameQuery = filterExercise.value.trim().toLowerCase();
+            if (nameQuery) exercises = exercises.filter(ex => (ex.name || '').toLowerCase().includes(nameQuery));
+
+            if (exSortColumn) {
+                exercises.sort((a, b) => {
+                    let valA, valB;
+                    if (exSortColumn === 'type') {
+                        valA = (a.type || '').toLowerCase();
+                        valB = (b.type || '').toLowerCase();
+                    } else if (exSortColumn === 'name') {
+                        valA = (a.name || '').toLowerCase();
+                        valB = (b.name || '').toLowerCase();
+                    } else if (exSortColumn === 'rating') {
+                        valA = a.rating || 0;
+                        valB = b.rating || 0;
+                    } else if (exSortColumn === 'total') {
+                        valA = getTotalReps(a);
+                        valB = getTotalReps(b);
+                    }
+                    if (valA < valB) return exSortDirection === 'asc' ? -1 : 1;
+                    if (valA > valB) return exSortDirection === 'asc' ? 1 : -1;
+                    return 0;
+                });
+            }
+
+            return exercises;
+        }
+
+        function updateExSortIcons() {
+            document.getElementById('sortIconType').textContent = '';
+            document.getElementById('sortIconExName').textContent = '';
+            document.getElementById('sortIconExRating').textContent = '';
+            document.getElementById('sortIconExTotal').textContent = '';
+            if (!exSortColumn) return;
+            const icon = exSortDirection === 'asc' ? '▲' : '▼';
+            if (exSortColumn === 'type') document.getElementById('sortIconType').textContent = icon;
+            if (exSortColumn === 'name') document.getElementById('sortIconExName').textContent = icon;
+            if (exSortColumn === 'rating') document.getElementById('sortIconExRating').textContent = icon;
+            if (exSortColumn === 'total') document.getElementById('sortIconExTotal').textContent = icon;
+        }
+
+        function buildInteractiveStars(currentRating, dataIndex) {
+            let html = '<div class="star-rating-interactive" data-index="' + dataIndex + '">';
+            for (let i = 1; i <= 5; i++) {
+                const activeClass = i <= currentRating ? 'star-active' : '';
+                html += `<span class="star-btn ${activeClass}" data-star="${i}" data-index="${dataIndex}">★</span>`;
+            }
+            html += '</div>';
+            return html;
+        }
+
+        function renderExercises() {
+            const training = getTraining();
+            if (!training) return;
+
+            exercisesBody.innerHTML = '';
+
+            toggleExFiltersBtn.style.display = training.exercises.length === 0 ? 'none' : '';
+
+            const exercises = getFilteredAndSortedExercises(training);
+
+            if (exercises.length === 0) {
+                emptyMessage.style.display = 'block';
+                emptyMessage.textContent = training.exercises.length === 0
+                    ? 'No exercises yet. Click "+ Add Exercise" to add one!'
+                    : 'No exercises match your filters.';
+                document.getElementById('exercisesTable').style.display = 'none';
+                return;
+            }
+
+            emptyMessage.style.display = 'none';
+            document.getElementById('exercisesTable').style.display = 'table';
+            updateExSortIcons();
+
+            exercises.forEach(exercise => {
+                const index = exercise._origIndex;
+                const tr = document.createElement('tr');
+                tr.dataset.index = index;
+
+                const s = exercise.series || [null, null, null, null, null, null];
+                const rating = exercise.rating || 0;
+                const total = getTotalReps(exercise);
+
+                tr.innerHTML = `
+                    <td class="td-type">
+                        <select class="inline-select inline-type" data-index="${index}">
+                            ${buildTypeOptions(exercise.type)}
+                        </select>
+                    </td>
+                    <td class="td-name">
+                        <select class="inline-select inline-name" data-index="${index}">
+                            ${buildExerciseOptions(exercise.type, exercise.name)}
+                        </select>
+                    </td>
+                    <td class="td-series"><input type="number" class="inline-input inline-series" data-index="${index}" data-series="0" min="0" placeholder="-" value="${s[0] != null ? s[0] : ''}"></td>
+                    <td class="td-series"><input type="number" class="inline-input inline-series" data-index="${index}" data-series="1" min="0" placeholder="-" value="${s[1] != null ? s[1] : ''}"></td>
+                    <td class="td-series"><input type="number" class="inline-input inline-series" data-index="${index}" data-series="2" min="0" placeholder="-" value="${s[2] != null ? s[2] : ''}"></td>
+                    <td class="td-series"><input type="number" class="inline-input inline-series" data-index="${index}" data-series="3" min="0" placeholder="-" value="${s[3] != null ? s[3] : ''}"></td>
+                    <td class="td-series"><input type="number" class="inline-input inline-series" data-index="${index}" data-series="4" min="0" placeholder="-" value="${s[4] != null ? s[4] : ''}"></td>
+                    <td class="td-series"><input type="number" class="inline-input inline-series" data-index="${index}" data-series="5" min="0" placeholder="-" value="${s[5] != null ? s[5] : ''}"></td>
+                    <td class="td-total" data-index="${index}">${total > 0 ? total : '-'}</td>
+                    <td class="td-rating-interactive">${buildInteractiveStars(rating, index)}</td>
+                    <td class="td-action">
+                        <button class="btn btn-small btn-delete btn-delete-row" data-index="${index}" title="Delete exercise">✕</button>
+                    </td>
+                `;
+
+                exercisesBody.appendChild(tr);
+            });
+
+            updateAvgRatingDisplay();
+        }
+
+        function updateTotalCell(index) {
+            const training = getTraining();
+            if (!training || !training.exercises[index]) return;
+            const total = getTotalReps(training.exercises[index]);
+            const cell = exercisesBody.querySelector(`.td-total[data-index="${index}"]`);
+            if (cell) {
+                cell.textContent = total > 0 ? total : '-';
+            }
+        }
+
+        function saveField(index, field, value) {
+            const trainings = getTrainings();
+            const training = trainings.find(t => t.id === trainingId);
+            if (!training || !training.exercises[index]) return;
+
+            if (field === 'type') {
+                training.exercises[index].type = value;
+                training.exercises[index].name = '';
+                saveTrainings(trainings);
+                renderExercises();
+            } else if (field === 'name') {
+                training.exercises[index].name = value;
+                saveTrainings(trainings);
+            } else if (field === 'series') {
+                training.exercises[index].series = normalizeSeries(training.exercises[index].series);
+                training.exercises[index].series[value.seriesIndex] = value.reps !== '' ? parseInt(value.reps) : null;
+                saveTrainings(trainings);
+                updateTotalCell(index);
+            } else if (field === 'rating') {
+                training.exercises[index].rating = value;
+                saveTrainings(trainings);
+                updateAvgRatingDisplay();
+            }
+        }
+
+        exercisesBody.addEventListener('change', (e) => {
+            const target = e.target;
+            const index = parseInt(target.dataset.index);
+            if (isNaN(index)) return;
+
+            if (target.classList.contains('inline-type')) {
+                saveField(index, 'type', target.value);
+            } else if (target.classList.contains('inline-name')) {
+                saveField(index, 'name', target.value);
+            } else if (target.classList.contains('inline-series')) {
+                const seriesIndex = parseInt(target.dataset.series);
+                saveField(index, 'series', { seriesIndex, reps: target.value });
+            }
+        });
+
+        exercisesBody.addEventListener('input', (e) => {
+            const target = e.target;
+            if (!target.classList.contains('inline-series')) return;
+            const index = parseInt(target.dataset.index);
+            const seriesIndex = parseInt(target.dataset.series);
+            if (isNaN(index) || isNaN(seriesIndex)) return;
+            saveField(index, 'series', { seriesIndex, reps: target.value });
+        });
+
+        exercisesBody.addEventListener('click', (e) => {
+            const target = e.target;
+
+            if (target.classList.contains('star-btn')) {
+                const index = parseInt(target.dataset.index);
+                const star = parseInt(target.dataset.star);
+                if (isNaN(index) || isNaN(star)) return;
+
+                const trainings = getTrainings();
+                const training = trainings.find(t => t.id === trainingId);
+                const currentRating = (training && training.exercises[index]) ? (training.exercises[index].rating || 0) : 0;
+                const newRating = currentRating === star ? 0 : star;
+
+                saveField(index, 'rating', newRating);
+
+                const container = target.closest('.star-rating-interactive');
+                if (container) {
+                    container.querySelectorAll('.star-btn').forEach(btn => {
+                        const s = parseInt(btn.dataset.star);
+                        if (s <= newRating) {
+                            btn.classList.add('star-active');
+                        } else {
+                            btn.classList.remove('star-active');
+                        }
+                    });
+                }
+                return;
+            }
+
+            if (target.classList.contains('btn-delete-row')) {
+                const index = parseInt(target.dataset.index);
+                if (isNaN(index)) return;
+                deleteExercise(trainingId, index);
+                renderExercises();
+                return;
+            }
+        });
+
+        exercisesBody.addEventListener('mouseover', (e) => {
+            if (!e.target.classList.contains('star-btn')) return;
+            const container = e.target.closest('.star-rating-interactive');
+            const hoverStar = parseInt(e.target.dataset.star);
+            if (!container || isNaN(hoverStar)) return;
+            container.querySelectorAll('.star-btn').forEach(btn => {
+                const s = parseInt(btn.dataset.star);
+                btn.classList.toggle('star-hover', s <= hoverStar);
+            });
+        });
+
+        exercisesBody.addEventListener('mouseout', (e) => {
+            if (!e.target.classList.contains('star-btn')) return;
+            const container = e.target.closest('.star-rating-interactive');
+            if (!container) return;
+            container.querySelectorAll('.star-btn').forEach(btn => btn.classList.remove('star-hover'));
+        });
+
+        document.querySelectorAll('#exercisesTable th.sortable').forEach(th => {
+            th.addEventListener('click', () => {
+                const col = th.dataset.sort;
+                if (exSortColumn === col) {
+                    exSortDirection = exSortDirection === 'asc' ? 'desc' : 'asc';
+                } else {
+                    exSortColumn = col;
+                    exSortDirection = 'asc';
+                }
+                renderExercises();
+            });
+        });
+
+        filterType.addEventListener('change', renderExercises);
+        filterExercise.addEventListener('input', renderExercises);
+
+        document.getElementById('clearExerciseFiltersBtn').addEventListener('click', () => {
+            filterType.value = '';
+            filterExercise.value = '';
+            exSortColumn = null;
+            renderExercises();
+        });
+
+        document.getElementById('addExerciseBtn').addEventListener('click', () => {
+            filterType.value = '';
+            filterExercise.value = '';
+            exSortColumn = null;
+
+            addExercise(trainingId, {
+                type: '',
+                name: '',
+                series: [null, null, null, null, null, null],
+                rating: 0
+            });
+            renderExercises();
+
+            const rows = exercisesBody.querySelectorAll('tr');
+            if (rows.length > 0) {
+                const lastRow = rows[rows.length - 1];
+                const typeSelect = lastRow.querySelector('.inline-type');
+                if (typeSelect) typeSelect.focus();
+            }
+
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+        });
+
+        populateFilterTypeDropdown();
+        renderHeader();
+        renderExercises();
+		
+		const CACHE_NAME = 'gym-tracker';
+
+		const ASSETS_TO_CACHE = [
+		  './',
+		  './index.html',
+		  './training.html',
+		  './app.js',
+		  './styles.css',
+		  './manifest.json',
+		  './icons/icon-192.png',
+		  './icons/icon-512.png'
+		];
+
+		// Install: cache core assets
+		self.addEventListener('install', (event) => {
+		  event.waitUntil(
+			caches.open(CACHE_NAME).then((cache) => {
+			  return cache.addAll(ASSETS_TO_CACHE);
+			})
+		  );
+		  self.skipWaiting();
+		});
+
+		// Activate: clean up old caches
+		self.addEventListener('activate', (event) => {
+		  event.waitUntil(
+			caches.keys().then((cacheNames) => {
+			  return Promise.all(
+				cacheNames
+				  .filter((name) => name !== CACHE_NAME)
+				  .map((name) => caches.delete(name))
+			  );
+			})
+		  );
+		  self.clients.claim();
+		});
+
+		// Fetch: serve from cache first, fall back to network
+		self.addEventListener('fetch', (event) => {
+		  // Skip non-GET requests
+		  if (event.request.method !== 'GET') return;
+
+		  // Skip CDN requests (jsPDF) — always fetch from network
+		  if (event.request.url.includes('cdnjs.cloudflare.com')) {
+			event.respondWith(
+			  fetch(event.request).catch(() => caches.match(event.request))
+			);
+			return;
+		  }
+
+		  event.respondWith(
+			caches.match(event.request).then((cachedResponse) => {
+			  if (cachedResponse) {
+				// Return cached version, but also update cache in background
+				const fetchPromise = fetch(event.request).then((networkResponse) => {
+				  if (networkResponse && networkResponse.status === 200) {
+					const responseClone = networkResponse.clone();
+					caches.open(CACHE_NAME).then((cache) => {
+					  cache.put(event.request, responseClone);
+					});
+				  }
+				  return networkResponse;
+				}).catch(() => {});
+
+				return cachedResponse;
+			  }
+
+			  // Not in cache — fetch from network and cache it
+			  return fetch(event.request).then((networkResponse) => {
+				if (networkResponse && networkResponse.status === 200) {
+				  const responseClone = networkResponse.clone();
+				  caches.open(CACHE_NAME).then((cache) => {
+					cache.put(event.request, responseClone);
+				  });
+				}
+				return networkResponse;
+			  });
+			})
+		  );
+		});
+    </script>
+</body>
+</html>
