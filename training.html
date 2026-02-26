@@ -13,6 +13,38 @@
     <link rel="apple-touch-icon" href="icons/icon-192.png">
 </head>
 <body>
+    <!-- Przycisk ustawień -->
+    <button class="settings-toggle-btn" id="settingsToggleBtn" title="Settings">⚙</button>
+
+    <!-- Panel ustawień -->
+    <div class="settings-overlay" id="settingsOverlay">
+        <div class="settings-panel" id="settingsPanel">
+            <div class="settings-header">
+                <h2 id="settingsTitle">⚙ Ustawienia</h2>
+                <button class="settings-close-btn" id="settingsCloseBtn">✕</button>
+            </div>
+            <div class="settings-body">
+                <div class="settings-item">
+                    <div class="settings-item-label">
+                        <span class="settings-item-icon">🎨</span>
+                        <span id="settingsThemeLabel">Motyw</span>
+                    </div>
+                    <div class="settings-theme-switcher" id="themeSwitcher">
+                        <button class="theme-btn" data-theme="light" id="themeBtnLight">☀️</button>
+                        <button class="theme-btn" data-theme="dark" id="themeBtnDark">🌙</button>
+                    </div>
+                </div>
+                <div class="settings-item">
+                    <div class="settings-item-label">
+                        <span class="settings-item-icon">🌍</span>
+                        <span id="settingsLangLabel">Język</span>
+                    </div>
+                    <div class="settings-lang-switcher" id="langSwitcher"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
         <a href="index.html" class="back-link"></a>
         <h1 id="trainingTitle"></h1>
