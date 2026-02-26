@@ -1,224 +1,244 @@
 // ========================================
-// Dziennik Treningowy - Logika aplikacji
+// Dziennik Treningowy - Logika
 // ========================================
 
-// ========================================
-// LocalStorage
-// ========================================
+// ---- LocalStorage ----
+function getTrainings() { const d = localStorage.getItem(CONFIG.STORAGE_KEY); return d ? JSON.parse(d) : []; }
+function saveTrainings(ts) { localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(ts)); }
+function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 8); }
 
-function getTrainings() {
-    const data = localStorage.getItem(CONFIG.STORAGE_KEY);
-    return data ? JSON.parse(data) : [];
-}
-
-function saveTrainings(trainings) {
-    localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(trainings));
-}
-
-function generateId() {
-    return Date.now().toString(36) + Math.random().toString(36).substring(2, 8);
-}
-
-// ========================================
-// CRUD treningów
-// ========================================
-
+// ---- CRUD Treningów ----
 function addTraining(name, date) {
-    const trainings = getTrainings();
-    const training = { id: generateId(), name, date, exercises: [] };
-    trainings.push(training);
-    saveTrainings(trainings);
-    return training;
+    const ts = getTrainings();
+    const tr = { id: generateId(), name, date, exercises: [] };
+    ts.push(tr); saveTrainings(ts); return tr;
 }
-
-function updateTraining(id, updates) {
-    const trainings = getTrainings();
-    const i = trainings.findIndex(t => t.id === id);
-    if (i !== -1) { trainings[i] = { ...trainings[i], ...updates }; saveTrainings(trainings); }
+function updateTraining(id, u) {
+    const ts = getTrainings();
+    const i = ts.findIndex(x => x.id === id);
+    if (i !== -1) { ts[i] = { ...ts[i], ...u }; saveTrainings(ts); }
 }
+function deleteTraining(id) { saveTrainings(getTrainings().filter(x => x.id !== id)); }
 
-function deleteTraining(id) {
-    saveTrainings(getTrainings().filter(t => t.id !== id));
-}
-
-// ========================================
-// CRUD ćwiczeń
-// ========================================
-
-function addExercise(trainingId, exercise) {
-    const trainings = getTrainings();
-    const training = trainings.find(t => t.id === trainingId);
-    if (training) {
-        exercise.series = normalizeSeries(exercise.series);
-        if (exercise.rating === undefined) exercise.rating = 0;
-        if (exercise.load === undefined) exercise.load = '';
-        training.exercises.push(exercise);
-        saveTrainings(trainings);
+// ---- CRUD Ćwiczeń ----
+function addExercise(tid, ex) {
+    const ts = getTrainings();
+    const tr = ts.find(x => x.id === tid);
+    if (tr) {
+        ex.series = normalizeSeries(ex.series);
+        if (ex.rating === undefined) ex.rating = 0;
+        if (ex.load === undefined) ex.load = '';
+        tr.exercises.push(ex); saveTrainings(ts);
     }
 }
-
-function deleteExercise(trainingId, exerciseIndex) {
-    const trainings = getTrainings();
-    const training = trainings.find(t => t.id === trainingId);
-    if (training) { training.exercises.splice(exerciseIndex, 1); saveTrainings(trainings); }
+function deleteExercise(tid, idx) {
+    const ts = getTrainings();
+    const tr = ts.find(x => x.id === tid);
+    if (tr) { tr.exercises.splice(idx, 1); saveTrainings(ts); }
 }
-
-function normalizeSeries(series) {
-    const result = [];
+function normalizeSeries(s) {
+    const r = [];
     for (let i = 0; i < CONFIG.MAX_SERIES; i++) {
-        const val = series && series[i] !== undefined && series[i] !== null && series[i] !== '' ? series[i] : null;
-        result.push(val);
+        r.push(s && s[i] !== undefined && s[i] !== null && s[i] !== '' ? s[i] : null);
     }
-    return result;
+    return r;
 }
 
-// ========================================
-// Oceny
-// ========================================
-
-function getAverageRating(training) {
-    if (!training || !training.exercises || training.exercises.length === 0) return 0;
-    const rated = training.exercises.filter(ex => (ex.rating || 0) > 0);
-    if (rated.length === 0) return 0;
-    return rated.reduce((acc, ex) => acc + (ex.rating || 0), 0) / rated.length;
+// ---- Oceny ----
+function getAverageRating(tr) {
+    if (!tr || !tr.exercises || !tr.exercises.length) return 0;
+    const r = tr.exercises.filter(e => (e.rating || 0) > 0);
+    if (!r.length) return 0;
+    return r.reduce((a, e) => a + (e.rating || 0), 0) / r.length;
 }
-
 function renderStarsReadonly(rating) {
-    let html = '<span class="star-rating-readonly">';
+    let h = '<span class="star-rating-readonly">';
     for (let i = 1; i <= CONFIG.MAX_STARS; i++) {
-        if (rating >= i) html += '<span class="star-ro star-full">★</span>';
-        else if (rating >= i - 0.5) html += '<span class="star-ro star-half">★</span>';
-        else html += '<span class="star-ro star-empty">★</span>';
+        if (rating >= i) h += '<span class="star-ro star-full">★</span>';
+        else if (rating >= i - 0.5) h += '<span class="star-ro star-half">★</span>';
+        else h += '<span class="star-ro star-empty">★</span>';
     }
-    return html + '</span>';
+    return h + '</span>';
 }
 
-// ========================================
-// Suma powtórzeń
-// ========================================
-
-function getTotalReps(exercise) {
-    const s = exercise.series || [];
-    let total = 0;
+// ---- Suma powtórzeń ----
+function getTotalReps(ex) {
+    const s = ex.series || [];
+    let tot = 0;
     for (let i = 0; i < CONFIG.MAX_SERIES; i++) {
-        if (s[i] != null && !isNaN(s[i])) total += s[i];
+        if (s[i] != null && !isNaN(s[i])) tot += s[i];
     }
-    return total;
+    return tot;
 }
 
-// ========================================
-// Import / Eksport
-// ========================================
-
+// ---- Import/Eksport ----
 function exportData() {
-    return JSON.stringify({ version: CONFIG.DATA_VERSION, exportedAt: new Date().toISOString(), trainings: getTrainings() }, null, 2);
+    return JSON.stringify({
+        version: CONFIG.DATA_VERSION,
+        exportedAt: new Date().toISOString(),
+        trainings: getTrainings()
+    }, null, 2);
 }
-
-function importData(trainings, mode) {
-    const normalize = (tr) => {
-        if (!tr.id) tr.id = generateId();
-        if (!Array.isArray(tr.exercises)) tr.exercises = [];
-        tr.exercises.forEach(ex => {
-            ex.series = normalizeSeries(ex.series);
-            if (ex.rating === undefined) ex.rating = 0;
-            if (ex.load === undefined) ex.load = '';
+function importData(data, mode) {
+    const norm = x => {
+        if (!x.id) x.id = generateId();
+        if (!Array.isArray(x.exercises)) x.exercises = [];
+        x.exercises.forEach(e => {
+            e.series = normalizeSeries(e.series);
+            if (e.rating === undefined) e.rating = 0;
+            if (e.load === undefined) e.load = '';
         });
     };
     if (mode === 'replace') {
-        trainings.forEach(normalize);
-        saveTrainings(trainings);
-    } else if (mode === 'merge') {
-        const existing = getTrainings();
-        const existingIds = new Set(existing.map(tr => tr.id));
-        trainings.forEach(tr => {
-            normalize(tr);
-            if (existingIds.has(tr.id)) return;
-            if (existing.some(e => e.name === tr.name && e.date === tr.date)) return;
-            existing.push(tr);
-            existingIds.add(tr.id);
+        data.forEach(norm);
+        saveTrainings(data);
+    } else {
+        const ex = getTrainings();
+        const ids = new Set(ex.map(x => x.id));
+        data.forEach(x => {
+            norm(x);
+            if (ids.has(x.id) || ex.some(e => e.name === x.name && e.date === x.date)) return;
+            ex.push(x); ids.add(x.id);
         });
-        saveTrainings(existing);
+        saveTrainings(ex);
     }
 }
 
-// ========================================
-// Pomocniki
-// ========================================
-
-function escapeHtml(str) {
-    const div = document.createElement('div');
-    div.textContent = str || '';
-    return div.innerHTML;
+// ---- Pomocniki ----
+function escapeHtml(s) {
+    const d = document.createElement('div');
+    d.textContent = s || '';
+    return d.innerHTML;
 }
+function dateLocale() { return t('date_locale'); }
 
-function dateLocale() {
-    return t('date_locale');
-}
-
-// ========================================
-// Service Worker
-// ========================================
-
+// ---- Service Worker ----
 if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js')
-        .then(reg => console.log('SW registered:', reg.scope))
-        .catch(err => console.log('SW registration failed:', err));
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+}
+
+// ========================================
+// Ustawienia
+// ========================================
+
+function initSettings() {
+    const toggleBtn = document.getElementById('settingsToggleBtn');
+    const overlay = document.getElementById('settingsOverlay');
+    const closeBtn = document.getElementById('settingsCloseBtn');
+    const langSwitcher = document.getElementById('langSwitcher');
+    if (!toggleBtn || !overlay) return;
+
+    // Tłumaczenia panelu
+    document.getElementById('settingsTitle').textContent = t('settings_title');
+    document.getElementById('settingsThemeLabel').textContent = t('settings_theme');
+    document.getElementById('settingsLangLabel').textContent = t('settings_language');
+
+    // Otwórz / zamknij
+    function openSettings() { overlay.classList.add('open'); }
+    function closeSettings() { overlay.classList.remove('open'); }
+
+    toggleBtn.addEventListener('click', openSettings);
+    closeBtn.addEventListener('click', closeSettings);
+    overlay.addEventListener('click', function (e) {
+        if (e.target === overlay) closeSettings();
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape' && overlay.classList.contains('open')) closeSettings();
+    });
+
+    // ---- Motyw ----
+    var btnLight = document.getElementById('themeBtnLight');
+    var btnDark = document.getElementById('themeBtnDark');
+
+    function updateThemeButtons() {
+        var active = getActiveTheme();
+        btnLight.classList.toggle('active', active === 'light');
+        btnDark.classList.toggle('active', active === 'dark');
+    }
+
+    btnLight.addEventListener('click', function () {
+        applyTheme('light');
+        updateThemeButtons();
+    });
+    btnDark.addEventListener('click', function () {
+        applyTheme('dark');
+        updateThemeButtons();
+    });
+    updateThemeButtons();
+
+    // ---- Język ----
+    var activeLang = getActiveLanguage();
+    langSwitcher.innerHTML = '';
+    CONFIG.AVAILABLE_LANGUAGES.forEach(function (code) {
+        var lang = TRANSLATIONS[code];
+        if (!lang) return;
+        var btn = document.createElement('button');
+        btn.className = 'lang-btn';
+        if (code === activeLang) btn.classList.add('active');
+        btn.innerHTML = '<span class="lang-btn-flag">' + lang.language_flag + '</span>';
+        btn.title = lang.language_name;
+        btn.addEventListener('click', function () {
+            if (code !== activeLang) setLanguage(code);
+        });
+        langSwitcher.appendChild(btn);
+    });
 }
 
 // ========================================
 // Inicjalizacja
 // ========================================
 
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', function () {
+    initSettings();
     if (document.getElementById('trainingsBody')) initIndexPage();
     if (document.getElementById('exercisesBody')) initTrainingPage();
 });
 
 // ========================================
-// ======= STRONA GŁÓWNA =======
+// STRONA GŁÓWNA
 // ========================================
 
 function initIndexPage() {
-    const EXERCISE_DATA_LOCALIZED = getLocalizedExerciseData();
+    var EXDATA = getLocalizedExerciseData();
 
-    const trainingsBody = document.getElementById('trainingsBody');
-    const trainingModal = document.getElementById('trainingModal');
-    const trainingForm = document.getElementById('trainingForm');
-    const trainingModalTitle = document.getElementById('trainingModalTitle');
-    const trainingNameInput = document.getElementById('trainingName');
-    const trainingDateInput = document.getElementById('trainingDate');
-    const emptyMessage = document.getElementById('emptyMessage');
-    const filterName = document.getElementById('filterName');
-    const filterDateFrom = document.getElementById('filterDateFrom');
-    const filterDateTo = document.getElementById('filterDateTo');
-    const filtersBar = document.getElementById('filtersBar');
-    const toggleFiltersBtn = document.getElementById('toggleFiltersBtn');
-    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
-    const selectionToolbar = document.getElementById('selectionToolbar');
-    const selectionCountEl = document.getElementById('selectionCount');
-    const downloadPdfBtn = document.getElementById('downloadPdfBtn');
-    const editSelectedBtn = document.getElementById('editSelectedBtn');
-    const deleteSelectedBtn = document.getElementById('deleteSelectedBtn');
-    const clearSelectionBtn = document.getElementById('clearSelectionBtn');
-    const dataBar = document.getElementById('dataBar');
-    const toggleDataBtn = document.getElementById('toggleDataBtn');
-    const importModal = document.getElementById('importModal');
-    const importDetail = document.getElementById('importDetail');
-    const importFileInput = document.getElementById('importFileInput');
+    var trainingsBody = document.getElementById('trainingsBody');
+    var trainingModal = document.getElementById('trainingModal');
+    var trainingForm = document.getElementById('trainingForm');
+    var trainingModalTitle = document.getElementById('trainingModalTitle');
+    var nameInput = document.getElementById('trainingName');
+    var dateInput = document.getElementById('trainingDate');
+    var emptyMsg = document.getElementById('emptyMessage');
+    var filterName = document.getElementById('filterName');
+    var filterDateFrom = document.getElementById('filterDateFrom');
+    var filterDateTo = document.getElementById('filterDateTo');
+    var filtersBar = document.getElementById('filtersBar');
+    var toggleFiltersBtn = document.getElementById('toggleFiltersBtn');
+    var selectAllCb = document.getElementById('selectAllCheckbox');
+    var selToolbar = document.getElementById('selectionToolbar');
+    var selCountEl = document.getElementById('selectionCount');
+    var pdfBtn = document.getElementById('downloadPdfBtn');
+    var editBtn = document.getElementById('editSelectedBtn');
+    var delBtn = document.getElementById('deleteSelectedBtn');
+    var clrSelBtn = document.getElementById('clearSelectionBtn');
+    var dataBar = document.getElementById('dataBar');
+    var toggleDataBtn = document.getElementById('toggleDataBtn');
+    var importModal = document.getElementById('importModal');
+    var importDetail = document.getElementById('importDetail');
+    var importFileInput = document.getElementById('importFileInput');
 
-    let editingTrainingId = null;
-    let pendingImportData = null;
-    let sortColumn = CONFIG.DEFAULT_SORT_COLUMN;
-    let sortDirection = CONFIG.DEFAULT_SORT_DIRECTION;
-    const selectedIds = new Set();
+    var editingId = null;
+    var pendingImport = null;
+    var sortCol = CONFIG.DEFAULT_SORT_COLUMN;
+    var sortDir = CONFIG.DEFAULT_SORT_DIRECTION;
+    var selected = new Set();
 
-    // ---- Zastosuj tłumaczenia do HTML ----
+    // ---- Tłumaczenia ----
     document.title = t('app_title');
     document.querySelector('h1').textContent = t('app_title_emoji');
     document.getElementById('addTrainingBtn').textContent = t('btn_add_training');
-    editSelectedBtn.innerHTML = t('btn_edit');
-    downloadPdfBtn.innerHTML = t('btn_pdf');
-    deleteSelectedBtn.innerHTML = t('btn_delete');
+    editBtn.innerHTML = t('btn_edit');
+    pdfBtn.innerHTML = t('btn_pdf');
+    delBtn.innerHTML = t('btn_delete');
     toggleFiltersBtn.textContent = t('btn_filters');
     toggleDataBtn.textContent = t('btn_data');
     document.querySelector('.data-bar-info').textContent = t('data_bar_info');
@@ -229,235 +249,347 @@ function initIndexPage() {
     document.querySelector('#filtersBar label[for="filterDateFrom"]').textContent = t('filter_from');
     document.querySelector('#filtersBar label[for="filterDateTo"]').textContent = t('filter_to');
     document.getElementById('clearFiltersBtn').textContent = t('btn_clear_filters');
-    clearSelectionBtn.textContent = t('btn_clear_selection');
-    selectAllCheckbox.title = t('select_all_title');
+    clrSelBtn.textContent = t('btn_clear_selection');
+    selectAllCb.title = t('select_all_title');
     document.getElementById('cancelTrainingBtn').textContent = t('btn_cancel');
     document.querySelector('#trainingForm button[type="submit"]').textContent = t('btn_save');
     document.querySelector('#trainingForm label[for="trainingName"]').textContent = t('training_name_label');
-    trainingNameInput.placeholder = t('training_name_placeholder');
+    nameInput.placeholder = t('training_name_placeholder');
     document.querySelector('#trainingForm label[for="trainingDate"]').textContent = t('training_date_label');
     document.querySelector('#importModal h2').textContent = t('import_title');
     document.querySelector('.import-warning').textContent = t('import_warning');
     document.getElementById('importCancelBtn').textContent = t('btn_cancel');
     document.getElementById('importMergeBtn').textContent = t('btn_merge');
     document.getElementById('importReplaceBtn').textContent = t('btn_replace');
+    emptyMsg.textContent = t('empty_no_trainings');
 
-    // Nagłówki tabeli
-    const thCells = document.querySelectorAll('#trainingsTable thead th');
-    thCells[1].innerHTML = `${t('th_name')} <span class="sort-icon" id="sortIconName"></span>`;
-    thCells[2].innerHTML = `${t('th_date')} <span class="sort-icon" id="sortIconDate"></span>`;
-    thCells[3].innerHTML = `${t('th_exercises')} <span class="sort-icon" id="sortIconExercises"></span>`;
-    thCells[4].innerHTML = `${t('th_rating')} <span class="sort-icon" id="sortIconRating"></span>`;
+    var thCells = document.querySelectorAll('#trainingsTable thead th');
+    thCells[1].innerHTML = t('th_name') + ' <span class="sort-icon" id="sortIconName"></span>';
+    thCells[2].innerHTML = t('th_date') + ' <span class="sort-icon" id="sortIconDate"></span>';
+    thCells[3].innerHTML = t('th_exercises') + ' <span class="sort-icon" id="sortIconExercises"></span>';
+    thCells[4].innerHTML = t('th_rating') + ' <span class="sort-icon" id="sortIconRating"></span>';
 
-    // Pomocniki daty
-    document.querySelectorAll('.date-helper-btn').forEach(btn => {
-        const offset = parseInt(btn.dataset.offset);
-        btn.textContent = tDateHelper(offset);
+    document.querySelectorAll('.date-helper-btn').forEach(function (btn) {
+        btn.textContent = tDateHelper(parseInt(btn.dataset.offset));
     });
 
-    emptyMessage.textContent = t('empty_no_trainings');
-
     // ---- Panele ----
-    toggleFiltersBtn.addEventListener('click', () => { filtersBar.classList.toggle('collapsed'); toggleFiltersBtn.classList.toggle('active'); });
-    toggleDataBtn.addEventListener('click', () => { dataBar.classList.toggle('collapsed'); toggleDataBtn.classList.toggle('active'); });
+    toggleFiltersBtn.addEventListener('click', function () {
+        filtersBar.classList.toggle('collapsed');
+        toggleFiltersBtn.classList.toggle('active');
+    });
+    toggleDataBtn.addEventListener('click', function () {
+        dataBar.classList.toggle('collapsed');
+        toggleDataBtn.classList.toggle('active');
+    });
 
     // ---- Pomocniki daty ----
-    document.querySelectorAll('.date-helper-btn').forEach(btn => {
-        btn.addEventListener('click', () => {
-            const d = new Date(); d.setDate(d.getDate() + parseInt(btn.dataset.offset));
-            trainingDateInput.value = d.toISOString().split('T')[0];
-            document.querySelectorAll('.date-helper-btn').forEach(b => b.classList.remove('active'));
+    document.querySelectorAll('.date-helper-btn').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            var d = new Date();
+            d.setDate(d.getDate() + parseInt(btn.dataset.offset));
+            dateInput.value = d.toISOString().split('T')[0];
+            document.querySelectorAll('.date-helper-btn').forEach(function (b) { b.classList.remove('active'); });
             btn.classList.add('active');
         });
     });
-    trainingDateInput.addEventListener('change', updateDateHelperHighlight);
+    dateInput.addEventListener('change', highlightDateHelper);
 
-    function updateDateHelperHighlight() {
-        const val = trainingDateInput.value;
-        document.querySelectorAll('.date-helper-btn').forEach(btn => {
-            const d = new Date(); d.setDate(d.getDate() + parseInt(btn.dataset.offset));
+    function highlightDateHelper() {
+        var val = dateInput.value;
+        document.querySelectorAll('.date-helper-btn').forEach(function (btn) {
+            var d = new Date();
+            d.setDate(d.getDate() + parseInt(btn.dataset.offset));
             btn.classList.toggle('active', val === d.toISOString().split('T')[0]);
         });
     }
 
     // ---- Eksport JSON ----
-    document.getElementById('exportJsonBtn').addEventListener('click', () => {
-        const blob = new Blob([exportData()], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url;
-        a.download = `${t('export_filename_prefix')}_${new Date().toISOString().split('T')[0]}.json`;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url);
+    document.getElementById('exportJsonBtn').addEventListener('click', function () {
+        var blob = new Blob([exportData()], { type: 'application/json' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url;
+        a.download = t('export_filename_prefix') + '_' + new Date().toISOString().split('T')[0] + '.json';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
     });
 
     // ---- Import JSON ----
-    document.getElementById('importJsonBtn').addEventListener('click', () => importFileInput.click());
-    importFileInput.addEventListener('change', (e) => {
-        const file = e.target.files[0]; if (!file) return;
-        const reader = new FileReader();
-        reader.onload = (ev) => {
+    document.getElementById('importJsonBtn').addEventListener('click', function () { importFileInput.click(); });
+    importFileInput.addEventListener('change', function (e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function (ev) {
             try {
-                const parsed = JSON.parse(ev.target.result);
-                if (!parsed.version || !Array.isArray(parsed.trainings)) { alert(t('import_invalid_format')); return; }
-                pendingImportData = parsed.trainings;
-                importDetail.textContent = t('import_detail', { fileCount: parsed.trainings.length, currentCount: getTrainings().length });
+                var parsed = JSON.parse(ev.target.result);
+                if (!parsed.version || !Array.isArray(parsed.trainings)) {
+                    alert(t('import_invalid_format'));
+                    return;
+                }
+                pendingImport = parsed.trainings;
+                importDetail.textContent = t('import_detail', {
+                    fileCount: parsed.trainings.length,
+                    currentCount: getTrainings().length
+                });
                 importModal.classList.add('active');
-            } catch (err) { alert(t('import_read_error')); }
+            } catch (err) {
+                alert(t('import_read_error'));
+            }
         };
-        reader.readAsText(file); importFileInput.value = '';
+        reader.readAsText(file);
+        importFileInput.value = '';
     });
-    document.getElementById('importCancelBtn').addEventListener('click', () => { importModal.classList.remove('active'); pendingImportData = null; });
-    document.getElementById('importMergeBtn').addEventListener('click', () => { if (!pendingImportData) return; importData(pendingImportData, 'merge'); importModal.classList.remove('active'); pendingImportData = null; selectedIds.clear(); renderTrainings(); });
-    document.getElementById('importReplaceBtn').addEventListener('click', () => { if (!pendingImportData) return; importData(pendingImportData, 'replace'); importModal.classList.remove('active'); pendingImportData = null; selectedIds.clear(); renderTrainings(); });
-    importModal.addEventListener('click', (e) => { if (e.target === importModal) { importModal.classList.remove('active'); pendingImportData = null; } });
+    document.getElementById('importCancelBtn').addEventListener('click', function () {
+        importModal.classList.remove('active');
+        pendingImport = null;
+    });
+    document.getElementById('importMergeBtn').addEventListener('click', function () {
+        if (!pendingImport) return;
+        importData(pendingImport, 'merge');
+        importModal.classList.remove('active');
+        pendingImport = null;
+        selected.clear();
+        renderTrainings();
+    });
+    document.getElementById('importReplaceBtn').addEventListener('click', function () {
+        if (!pendingImport) return;
+        importData(pendingImport, 'replace');
+        importModal.classList.remove('active');
+        pendingImport = null;
+        selected.clear();
+        renderTrainings();
+    });
+    importModal.addEventListener('click', function (e) {
+        if (e.target === importModal) {
+            importModal.classList.remove('active');
+            pendingImport = null;
+        }
+    });
 
-    // ---- Sortowanie i filtrowanie ----
-    function getFilteredAndSortedTrainings() {
-        let trainings = getTrainings();
-        const q = filterName.value.trim().toLowerCase();
-        if (q) trainings = trainings.filter(tr => tr.name.toLowerCase().includes(q));
-        if (filterDateFrom.value) trainings = trainings.filter(tr => tr.date >= filterDateFrom.value);
-        if (filterDateTo.value) trainings = trainings.filter(tr => tr.date <= filterDateTo.value);
-        trainings.sort((a, b) => {
-            let va, vb;
-            if (sortColumn === 'name') { va = a.name.toLowerCase(); vb = b.name.toLowerCase(); }
-            else if (sortColumn === 'date') { va = a.date; vb = b.date; }
-            else if (sortColumn === 'exercises') { va = a.exercises.length; vb = b.exercises.length; }
-            else if (sortColumn === 'rating') { va = getAverageRating(a); vb = getAverageRating(b); }
-            if (va < vb) return sortDirection === 'asc' ? -1 : 1;
-            if (va > vb) return sortDirection === 'asc' ? 1 : -1;
+    // ---- Filtrowanie i sortowanie ----
+    function getFiltered() {
+        var trainings = getTrainings();
+        var q = filterName.value.trim().toLowerCase();
+        if (q) trainings = trainings.filter(function (x) { return x.name.toLowerCase().includes(q); });
+        if (filterDateFrom.value) trainings = trainings.filter(function (x) { return x.date >= filterDateFrom.value; });
+        if (filterDateTo.value) trainings = trainings.filter(function (x) { return x.date <= filterDateTo.value; });
+        trainings.sort(function (a, b) {
+            var va, vb;
+            if (sortCol === 'name') { va = a.name.toLowerCase(); vb = b.name.toLowerCase(); }
+            else if (sortCol === 'date') { va = a.date; vb = b.date; }
+            else if (sortCol === 'exercises') { va = a.exercises.length; vb = b.exercises.length; }
+            else { va = getAverageRating(a); vb = getAverageRating(b); }
+            if (va < vb) return sortDir === 'asc' ? -1 : 1;
+            if (va > vb) return sortDir === 'asc' ? 1 : -1;
             return 0;
         });
         return trainings;
     }
 
     function updateSortIcons() {
-        ['sortIconName', 'sortIconDate', 'sortIconExercises', 'sortIconRating'].forEach(id => document.getElementById(id).textContent = '');
-        const icon = sortDirection === 'asc' ? '▲' : '▼';
-        const map = { name: 'sortIconName', date: 'sortIconDate', exercises: 'sortIconExercises', rating: 'sortIconRating' };
-        if (map[sortColumn]) document.getElementById(map[sortColumn]).textContent = icon;
+        ['sortIconName', 'sortIconDate', 'sortIconExercises', 'sortIconRating'].forEach(function (id) {
+            document.getElementById(id).textContent = '';
+        });
+        var map = { name: 'sortIconName', date: 'sortIconDate', exercises: 'sortIconExercises', rating: 'sortIconRating' };
+        if (map[sortCol]) document.getElementById(map[sortCol]).textContent = sortDir === 'asc' ? '▲' : '▼';
     }
 
-    function formatDateShort(dateStr) {
-        const date = new Date(dateStr + 'T00:00:00');
-        if (window.innerWidth <= 480) return date.toLocaleDateString(dateLocale(), { month: 'short', day: 'numeric' });
-        return date.toLocaleDateString(dateLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
+    function formatDate(dateStr) {
+        var d = new Date(dateStr + 'T00:00:00');
+        if (window.innerWidth <= 480) return d.toLocaleDateString(dateLocale(), { month: 'short', day: 'numeric' });
+        return d.toLocaleDateString(dateLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
     }
 
-    // ---- UI zaznaczenia ----
+    // ---- Zaznaczenie ----
     function updateSelectionUI() {
-        const count = selectedIds.size;
-        const has = getTrainings().length > 0;
-        downloadPdfBtn.style.display = has ? '' : 'none'; downloadPdfBtn.disabled = count === 0;
-        downloadPdfBtn.title = count > 0 ? t('tooltip_pdf_enabled', { count }) : t('tooltip_pdf_disabled');
-        editSelectedBtn.style.display = has ? '' : 'none'; editSelectedBtn.disabled = count !== 1;
-        editSelectedBtn.title = count === 1 ? t('tooltip_edit_enabled') : t('tooltip_edit_disabled');
-        deleteSelectedBtn.style.display = has ? '' : 'none'; deleteSelectedBtn.disabled = count === 0;
-        deleteSelectedBtn.title = count > 0 ? t('tooltip_delete_enabled', { count }) : t('tooltip_delete_disabled');
-        if (count > 0) { selectionToolbar.classList.add('visible'); selectionCountEl.textContent = t('selection_count', { count }); }
-        else { selectionToolbar.classList.remove('visible'); }
-        const visible = getFilteredAndSortedTrainings();
-        const allSel = visible.length > 0 && visible.every(tr => selectedIds.has(tr.id));
-        const someSel = visible.some(tr => selectedIds.has(tr.id));
-        selectAllCheckbox.checked = allSel; selectAllCheckbox.indeterminate = someSel && !allSel;
-        document.querySelectorAll('#trainingsBody tr').forEach(tr => { tr.classList.toggle('selected', tr.dataset.id && selectedIds.has(tr.dataset.id)); });
+        var count = selected.size;
+        var hasData = getTrainings().length > 0;
+
+        pdfBtn.style.display = hasData ? '' : 'none';
+        pdfBtn.disabled = count === 0;
+        pdfBtn.title = count > 0 ? t('tooltip_pdf_enabled', { count: count }) : t('tooltip_pdf_disabled');
+        editBtn.style.display = hasData ? '' : 'none';
+        editBtn.disabled = count !== 1;
+        editBtn.title = count === 1 ? t('tooltip_edit_enabled') : t('tooltip_edit_disabled');
+        delBtn.style.display = hasData ? '' : 'none';
+        delBtn.disabled = count === 0;
+        delBtn.title = count > 0 ? t('tooltip_delete_enabled', { count: count }) : t('tooltip_delete_disabled');
+
+        if (count > 0) {
+            selToolbar.classList.add('visible');
+            selCountEl.textContent = t('selection_count', { count: count });
+        } else {
+            selToolbar.classList.remove('visible');
+        }
+
+        var visible = getFiltered();
+        var allSel = visible.length > 0 && visible.every(function (x) { return selected.has(x.id); });
+        var someSel = visible.some(function (x) { return selected.has(x.id); });
+        selectAllCb.checked = allSel;
+        selectAllCb.indeterminate = someSel && !allSel;
+
+        document.querySelectorAll('#trainingsBody tr').forEach(function (row) {
+            row.classList.toggle('selected', row.dataset.id && selected.has(row.dataset.id));
+        });
     }
 
     // ---- Renderowanie ----
     function renderTrainings() {
-        const trainings = getFilteredAndSortedTrainings();
-        const all = getTrainings();
+        var trainings = getFiltered();
+        var all = getTrainings();
         trainingsBody.innerHTML = '';
         toggleFiltersBtn.style.display = all.length === 0 ? 'none' : '';
+
         if (trainings.length === 0) {
-            emptyMessage.style.display = 'block';
-            emptyMessage.textContent = all.length === 0 ? t('empty_no_trainings') : t('empty_no_filter_match');
+            emptyMsg.style.display = 'block';
+            emptyMsg.textContent = all.length === 0 ? t('empty_no_trainings') : t('empty_no_filter_match');
             document.getElementById('trainingsTable').style.display = 'none';
-            updateSelectionUI(); return;
+            updateSelectionUI();
+            return;
         }
-        emptyMessage.style.display = 'none';
+
+        emptyMsg.style.display = 'none';
         document.getElementById('trainingsTable').style.display = 'table';
         updateSortIcons();
-        trainings.forEach(training => {
-            const tr = document.createElement('tr'); tr.dataset.id = training.id;
-            tr.innerHTML = `
-                <td class="td-checkbox"><input type="checkbox" class="row-checkbox" data-id="${training.id}" ${selectedIds.has(training.id) ? 'checked' : ''}></td>
-                <td class="clickable" data-id="${training.id}">${escapeHtml(training.name)}</td>
-                <td class="clickable" data-id="${training.id}">${formatDateShort(training.date)}</td>
-                <td class="clickable" data-id="${training.id}">${training.exercises.length}</td>
-                <td class="clickable td-rating" data-id="${training.id}">${renderStarsReadonly(getAverageRating(training))}</td>
-            `;
-            trainingsBody.appendChild(tr);
+
+        trainings.forEach(function (training) {
+            var row = document.createElement('tr');
+            row.dataset.id = training.id;
+            var checked = selected.has(training.id) ? 'checked' : '';
+            var avg = getAverageRating(training);
+            row.innerHTML =
+                '<td class="td-checkbox"><input type="checkbox" class="row-checkbox" data-id="' + training.id + '" ' + checked + '></td>' +
+                '<td class="clickable" data-id="' + training.id + '">' + escapeHtml(training.name) + '</td>' +
+                '<td class="clickable" data-id="' + training.id + '">' + formatDate(training.date) + '</td>' +
+                '<td class="clickable" data-id="' + training.id + '">' + training.exercises.length + '</td>' +
+                '<td class="clickable td-rating" data-id="' + training.id + '">' + renderStarsReadonly(avg) + '</td>';
+            trainingsBody.appendChild(row);
         });
         updateSelectionUI();
     }
 
     // ---- Modal ----
-    function openTrainingModal(training) {
+    function openModal(training) {
         if (training) {
             trainingModalTitle.textContent = t('modal_edit_training');
-            trainingNameInput.value = training.name; trainingDateInput.value = training.date; editingTrainingId = training.id;
+            nameInput.value = training.name;
+            dateInput.value = training.date;
+            editingId = training.id;
         } else {
             trainingModalTitle.textContent = t('modal_add_training');
-            trainingNameInput.value = ''; trainingDateInput.value = new Date().toISOString().split('T')[0]; editingTrainingId = null;
+            nameInput.value = '';
+            dateInput.value = new Date().toISOString().split('T')[0];
+            editingId = null;
         }
-        updateDateHelperHighlight(); trainingModal.classList.add('active'); trainingNameInput.focus();
+        highlightDateHelper();
+        trainingModal.classList.add('active');
+        nameInput.focus();
     }
-    function closeTrainingModal() { trainingModal.classList.remove('active'); editingTrainingId = null; }
+
+    function closeModal() {
+        trainingModal.classList.remove('active');
+        editingId = null;
+    }
 
     // ---- PDF ----
     function exportPDF(ids) {
-        const trainings = ids.map(id => getTrainings().find(tr => tr.id === id)).filter(Boolean);
-        if (trainings.length === 0) return;
-        trainings.sort((a, b) => new Date(a.date) - new Date(b.date));
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF(CONFIG.PDF_ORIENTATION);
-        const pw = doc.internal.pageSize.getWidth();
+        var trainings = ids.map(function (id) { return getTrainings().find(function (x) { return x.id === id; }); }).filter(Boolean);
+        if (!trainings.length) return;
+        trainings.sort(function (a, b) { return new Date(a.date) - new Date(b.date); });
 
-        trainings.forEach((training, tIdx) => {
+        var jsPDF = window.jspdf.jsPDF;
+        var doc = new jsPDF(CONFIG.PDF_ORIENTATION);
+        var pw = doc.internal.pageSize.getWidth();
+
+        trainings.forEach(function (training, tIdx) {
             if (tIdx > 0) doc.addPage();
-            let y = 18;
-            doc.setFontSize(22); doc.setFont('helvetica', 'bold'); doc.setTextColor(30);
-            doc.text(training.name, pw / 2, y, { align: 'center' }); y += 8;
-            const ds = new Date(training.date + 'T00:00:00').toLocaleDateString(dateLocale(), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
-            doc.setFontSize(12); doc.setFont('helvetica', 'normal'); doc.setTextColor(100);
-            doc.text(ds, pw / 2, y, { align: 'center' }); y += 6;
-            doc.setDrawColor(200); doc.setLineWidth(0.5); doc.line(14, y, pw - 14, y); y += 8;
-            doc.setTextColor(60); doc.setFontSize(11);
-            doc.text(`${t('pdf_total_exercises')}: ${training.exercises.length}`, 14, y);
-            let gt = 0; training.exercises.forEach(ex => { gt += getTotalReps(ex); });
-            doc.text(`${t('pdf_total_reps')}: ${gt}`, 100, y); y += 8;
+            var y = 18;
+
+            doc.setFontSize(22);
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(30);
+            doc.text(training.name, pw / 2, y, { align: 'center' });
+            y += 8;
+
+            var dateStr = new Date(training.date + 'T00:00:00').toLocaleDateString(dateLocale(), {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            });
+            doc.setFontSize(12);
+            doc.setFont('helvetica', 'normal');
+            doc.setTextColor(100);
+            doc.text(dateStr, pw / 2, y, { align: 'center' });
+            y += 6;
+
+            doc.setDrawColor(200);
+            doc.setLineWidth(0.5);
+            doc.line(14, y, pw - 14, y);
+            y += 8;
+
+            doc.setTextColor(60);
+            doc.setFontSize(11);
+            doc.text(t('pdf_total_exercises') + ': ' + training.exercises.length, 14, y);
+            var grandTotal = 0;
+            training.exercises.forEach(function (ex) { grandTotal += getTotalReps(ex); });
+            doc.text(t('pdf_total_reps') + ': ' + grandTotal, 100, y);
+            y += 8;
 
             if (training.exercises.length === 0) {
-                doc.setFontSize(12); doc.setTextColor(150);
+                doc.setFontSize(12);
+                doc.setTextColor(150);
                 doc.text(t('pdf_no_exercises'), pw / 2, y + 10, { align: 'center' });
             } else {
-                const grouped = {};
-                training.exercises.forEach(ex => {
-                    const type = ex.type || t('pdf_uncategorized');
+                var grouped = {};
+                training.exercises.forEach(function (ex) {
+                    var type = ex.type || t('pdf_uncategorized');
                     if (!grouped[type]) grouped[type] = [];
                     grouped[type].push(ex);
                 });
-                Object.keys(grouped).forEach(type => {
-                    doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(40);
-                    doc.text(type, 14, y); y += 2;
-                    const rows = grouped[type].map(ex => {
-                        const s = ex.series || [];
-                        const tot = getTotalReps(ex);
-                        return [ex.name || '-', ex.load || '-',
+
+                Object.keys(grouped).forEach(function (type) {
+                    doc.setFontSize(13);
+                    doc.setFont('helvetica', 'bold');
+                    doc.setTextColor(40);
+                    doc.text(type, 14, y);
+                    y += 2;
+
+                    var tableRows = grouped[type].map(function (ex) {
+                        var s = ex.series || [];
+                        var total = getTotalReps(ex);
+                        return [
+                            ex.name || '-', ex.load || '-',
                             s[0] != null ? String(s[0]) : '-', s[1] != null ? String(s[1]) : '-',
                             s[2] != null ? String(s[2]) : '-', s[3] != null ? String(s[3]) : '-',
                             s[4] != null ? String(s[4]) : '-', s[5] != null ? String(s[5]) : '-',
-                            tot > 0 ? String(tot) : '-'];
+                            total > 0 ? String(total) : '-'
+                        ];
                     });
+
                     doc.autoTable({
-                        startY: y, body: rows, theme: 'grid', margin: { left: 14, right: 14 },
+                        startY: y,
                         head: [[t('pdf_header_exercise'), t('pdf_header_load'), 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', t('pdf_header_total')]],
-                        headStyles: { fillColor: CONFIG.PDF_HEADER_COLOR, textColor: 255, fontStyle: 'bold', fontSize: 10, halign: 'center' },
+                        body: tableRows,
+                        theme: 'grid',
+                        margin: { left: 14, right: 14 },
+                        headStyles: {
+                            fillColor: CONFIG.PDF_HEADER_COLOR,
+                            textColor: 255,
+                            fontStyle: 'bold',
+                            fontSize: 10,
+                            halign: 'center'
+                        },
                         columnStyles: {
-                            0: { cellWidth: 'auto', halign: 'left' }, 1: { cellWidth: 28, halign: 'center' },
-                            2: { cellWidth: 14, halign: 'center' }, 3: { cellWidth: 14, halign: 'center' },
-                            4: { cellWidth: 14, halign: 'center' }, 5: { cellWidth: 14, halign: 'center' },
-                            6: { cellWidth: 14, halign: 'center' }, 7: { cellWidth: 14, halign: 'center' },
+                            0: { cellWidth: 'auto', halign: 'left' },
+                            1: { cellWidth: 28, halign: 'center' },
+                            2: { cellWidth: 14, halign: 'center' },
+                            3: { cellWidth: 14, halign: 'center' },
+                            4: { cellWidth: 14, halign: 'center' },
+                            5: { cellWidth: 14, halign: 'center' },
+                            6: { cellWidth: 14, halign: 'center' },
+                            7: { cellWidth: 14, halign: 'center' },
                             8: { cellWidth: 18, halign: 'center', fontStyle: 'bold' }
                         },
                         bodyStyles: { fontSize: 10, textColor: 50 },
@@ -468,101 +600,145 @@ function initIndexPage() {
             }
         });
 
-        const tp = doc.internal.getNumberOfPages();
-        for (let i = 1; i <= tp; i++) {
-            doc.setPage(i); doc.setFontSize(8); doc.setTextColor(180);
-            doc.text(t('pdf_footer', { date: new Date().toLocaleDateString(dateLocale()), page: i, total: tp }),
-                pw / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' });
+        var totalPages = doc.internal.getNumberOfPages();
+        for (var p = 1; p <= totalPages; p++) {
+            doc.setPage(p);
+            doc.setFontSize(8);
+            doc.setTextColor(180);
+            doc.text(
+                t('pdf_footer', { date: new Date().toLocaleDateString(dateLocale()), page: p, total: totalPages }),
+                pw / 2,
+                doc.internal.pageSize.getHeight() - 10,
+                { align: 'center' }
+            );
         }
-        let fn;
-        if (trainings.length === 1) fn = `${trainings[0].name.replace(/[^a-z0-9ąćęłńóśźż]/gi, '_').toLowerCase()}_${trainings[0].date}.pdf`;
-        else fn = `${t('pdf_filename_prefix')}_${trainings.length}_${t('pdf_filename_suffix')}.pdf`;
-        doc.save(fn);
+
+        var filename;
+        if (trainings.length === 1) {
+            var safeName = trainings[0].name.replace(/[^a-z0-9ąćęłńóśźż]/gi, '_').toLowerCase();
+            filename = safeName + '_' + trainings[0].date + '.pdf';
+        } else {
+            filename = t('pdf_filename_prefix') + '_' + trainings.length + '_' + t('pdf_filename_suffix') + '.pdf';
+        }
+        doc.save(filename);
     }
 
     // ---- Zdarzenia ----
-    document.getElementById('addTrainingBtn').addEventListener('click', () => openTrainingModal(null));
-    document.getElementById('cancelTrainingBtn').addEventListener('click', closeTrainingModal);
-    trainingModal.addEventListener('click', (e) => { if (e.target === trainingModal) closeTrainingModal(); });
+    document.getElementById('addTrainingBtn').addEventListener('click', function () { openModal(null); });
+    document.getElementById('cancelTrainingBtn').addEventListener('click', closeModal);
+    trainingModal.addEventListener('click', function (e) { if (e.target === trainingModal) closeModal(); });
 
-    trainingForm.addEventListener('submit', (e) => {
+    trainingForm.addEventListener('submit', function (e) {
         e.preventDefault();
-        const name = trainingNameInput.value.trim(); const date = trainingDateInput.value;
+        var name = nameInput.value.trim();
+        var date = dateInput.value;
         if (!name || !date) return;
-        if (editingTrainingId) { updateTraining(editingTrainingId, { name, date }); closeTrainingModal(); renderTrainings(); }
-        else { const tr = addTraining(name, date); closeTrainingModal(); window.location.href = `training.html?id=${tr.id}`; }
+        if (editingId) {
+            updateTraining(editingId, { name: name, date: date });
+            closeModal();
+            renderTrainings();
+        } else {
+            var training = addTraining(name, date);
+            closeModal();
+            window.location.href = 'training.html?id=' + training.id;
+        }
     });
 
-    trainingsBody.addEventListener('click', (e) => {
-        const el = e.target.classList.contains('clickable') ? e.target : e.target.closest('.clickable');
-        if (el && el.dataset.id) window.location.href = `training.html?id=${el.dataset.id}`;
+    trainingsBody.addEventListener('click', function (e) {
+        var el = e.target.classList.contains('clickable') ? e.target : e.target.closest('.clickable');
+        if (el && el.dataset.id) window.location.href = 'training.html?id=' + el.dataset.id;
     });
-    trainingsBody.addEventListener('change', (e) => {
+
+    trainingsBody.addEventListener('change', function (e) {
         if (!e.target.classList.contains('row-checkbox')) return;
-        if (e.target.checked) selectedIds.add(e.target.dataset.id); else selectedIds.delete(e.target.dataset.id);
+        var id = e.target.dataset.id;
+        if (e.target.checked) selected.add(id); else selected.delete(id);
         updateSelectionUI();
     });
-    selectAllCheckbox.addEventListener('change', () => {
-        const v = getFilteredAndSortedTrainings();
-        if (selectAllCheckbox.checked) v.forEach(tr => selectedIds.add(tr.id)); else v.forEach(tr => selectedIds.delete(tr.id));
+
+    selectAllCb.addEventListener('change', function () {
+        var visible = getFiltered();
+        if (selectAllCb.checked) visible.forEach(function (x) { selected.add(x.id); });
+        else visible.forEach(function (x) { selected.delete(x.id); });
         renderTrainings();
     });
-    editSelectedBtn.addEventListener('click', () => {
-        if (selectedIds.size !== 1) return;
-        const tr = getTrainings().find(t => t.id === Array.from(selectedIds)[0]);
-        if (tr) openTrainingModal(tr);
-    });
-    downloadPdfBtn.addEventListener('click', () => { if (selectedIds.size > 0) exportPDF(Array.from(selectedIds)); });
-    deleteSelectedBtn.addEventListener('click', () => {
-        if (selectedIds.size === 0) return;
-        const c = selectedIds.size;
-        if (!confirm(c === 1 ? t('confirm_delete_single') : t('confirm_delete_multiple', { count: c }))) return;
-        Array.from(selectedIds).forEach(id => deleteTraining(id));
-        selectedIds.clear(); renderTrainings();
-    });
-    clearSelectionBtn.addEventListener('click', () => { selectedIds.clear(); renderTrainings(); });
 
-    document.querySelectorAll('#trainingsTable th.sortable').forEach(th => {
-        th.addEventListener('click', () => {
-            const col = th.dataset.sort;
-            if (sortColumn === col) sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-            else { sortColumn = col; sortDirection = 'asc'; }
+    editBtn.addEventListener('click', function () {
+        if (selected.size !== 1) return;
+        var training = getTrainings().find(function (x) { return x.id === Array.from(selected)[0]; });
+        if (training) openModal(training);
+    });
+
+    pdfBtn.addEventListener('click', function () {
+        if (selected.size > 0) exportPDF(Array.from(selected));
+    });
+
+    delBtn.addEventListener('click', function () {
+        if (selected.size === 0) return;
+        var count = selected.size;
+        var msg = count === 1 ? t('confirm_delete_single') : t('confirm_delete_multiple', { count: count });
+        if (!confirm(msg)) return;
+        Array.from(selected).forEach(function (id) { deleteTraining(id); });
+        selected.clear();
+        renderTrainings();
+    });
+
+    clrSelBtn.addEventListener('click', function () { selected.clear(); renderTrainings(); });
+
+    document.querySelectorAll('#trainingsTable th.sortable').forEach(function (th) {
+        th.addEventListener('click', function () {
+            var col = th.dataset.sort;
+            if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
+            else { sortCol = col; sortDir = 'asc'; }
             renderTrainings();
         });
     });
+
     filterName.addEventListener('input', renderTrainings);
     filterDateFrom.addEventListener('change', renderTrainings);
     filterDateTo.addEventListener('change', renderTrainings);
-    document.getElementById('clearFiltersBtn').addEventListener('click', () => { filterName.value = ''; filterDateFrom.value = ''; filterDateTo.value = ''; renderTrainings(); });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { closeTrainingModal(); importModal.classList.remove('active'); pendingImportData = null; } });
-    window.addEventListener('resize', renderTrainings);
+    document.getElementById('clearFiltersBtn').addEventListener('click', function () {
+        filterName.value = '';
+        filterDateFrom.value = '';
+        filterDateTo.value = '';
+        renderTrainings();
+    });
 
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeModal();
+            importModal.classList.remove('active');
+            pendingImport = null;
+        }
+    });
+
+    window.addEventListener('resize', renderTrainings);
     renderTrainings();
 }
 
 // ========================================
-// ======= STRONA TRENINGU =======
+// STRONA TRENINGU
 // ========================================
 
 function initTrainingPage() {
-    const EXERCISE_DATA_LOCALIZED = getLocalizedExerciseData();
+    var EXDATA = getLocalizedExerciseData();
 
-    const params = new URLSearchParams(window.location.search);
-    const trainingId = params.get('id');
+    var params = new URLSearchParams(window.location.search);
+    var trainingId = params.get('id');
     if (!trainingId) { window.location.href = 'index.html'; return; }
 
-    const exercisesBody = document.getElementById('exercisesBody');
-    const emptyMessage = document.getElementById('emptyMessage');
-    const filterType = document.getElementById('filterType');
-    const filterExercise = document.getElementById('filterExercise');
-    const exerciseFiltersBar = document.getElementById('exerciseFiltersBar');
-    const toggleExFiltersBtn = document.getElementById('toggleExFiltersBtn');
-    const trainingAvgRating = document.getElementById('trainingAvgRating');
+    var exercisesBody = document.getElementById('exercisesBody');
+    var emptyMsg = document.getElementById('emptyMessage');
+    var filterType = document.getElementById('filterType');
+    var filterExercise = document.getElementById('filterExercise');
+    var exFiltersBar = document.getElementById('exerciseFiltersBar');
+    var toggleExFiltersBtn = document.getElementById('toggleExFiltersBtn');
+    var avgRatingEl = document.getElementById('trainingAvgRating');
 
-    let exSortColumn = null;
-    let exSortDirection = 'asc';
+    var exSortCol = null;
+    var exSortDir = 'asc';
 
-    // ---- Tłumaczenia HTML ----
+    // ---- Tłumaczenia ----
     document.querySelector('.back-link').textContent = t('back_to_trainings');
     document.getElementById('addExerciseBtn').textContent = t('btn_add_exercise');
     toggleExFiltersBtn.textContent = t('btn_filters');
@@ -571,85 +747,95 @@ function initTrainingPage() {
     document.querySelector('#exerciseFiltersBar label[for="filterExercise"]').textContent = t('filter_exercise');
     filterExercise.placeholder = t('filter_exercise_placeholder');
     document.getElementById('clearExerciseFiltersBtn').textContent = t('btn_clear_filters');
-    emptyMessage.textContent = t('empty_no_exercises');
+    emptyMsg.textContent = t('empty_no_exercises');
 
-    // Nagłówki tabeli
-    const ths = document.querySelectorAll('#exercisesTable thead th');
-    ths[0].innerHTML = `${t('th_type')} <span class="sort-icon" id="sortIconType"></span>`;
-    ths[1].innerHTML = `${t('th_exercise')} <span class="sort-icon" id="sortIconExName"></span>`;
-    ths[2].innerHTML = `${t('th_load')} <span class="sort-icon" id="sortIconExLoad"></span>`;
-    // S1-S6 remain
-    ths[9].innerHTML = `${t('th_total')} <span class="sort-icon" id="sortIconExTotal"></span>`;
-    ths[10].innerHTML = `${t('th_rating')} <span class="sort-icon" id="sortIconExRating"></span>`;
+    var ths = document.querySelectorAll('#exercisesTable thead th');
+    ths[0].innerHTML = t('th_type') + ' <span class="sort-icon" id="sortIconType"></span>';
+    ths[1].innerHTML = t('th_exercise') + ' <span class="sort-icon" id="sortIconExName"></span>';
+    ths[2].innerHTML = t('th_load') + ' <span class="sort-icon" id="sortIconExLoad"></span>';
+    ths[9].innerHTML = t('th_total') + ' <span class="sort-icon" id="sortIconExTotal"></span>';
+    ths[10].innerHTML = t('th_rating') + ' <span class="sort-icon" id="sortIconExRating"></span>';
 
-    toggleExFiltersBtn.addEventListener('click', () => { exerciseFiltersBar.classList.toggle('collapsed'); toggleExFiltersBtn.classList.toggle('active'); });
+    toggleExFiltersBtn.addEventListener('click', function () {
+        exFiltersBar.classList.toggle('collapsed');
+        toggleExFiltersBtn.classList.toggle('active');
+    });
 
-    function getTraining() { return getTrainings().find(t => t.id === trainingId); }
+    function getTraining() {
+        return getTrainings().find(function (x) { return x.id === trainingId; });
+    }
 
     function renderHeader() {
-        const training = getTraining();
+        var training = getTraining();
         if (!training) { window.location.href = 'index.html'; return; }
-        document.getElementById('trainingTitle').textContent = `🏋️ ${training.name}`;
+        document.getElementById('trainingTitle').textContent = '🏋️ ' + training.name;
         document.getElementById('trainingDate').textContent = new Date(training.date + 'T00:00:00').toLocaleDateString(dateLocale(), {
             weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
         });
-        document.title = `${training.name} - ${t('app_title')}`;
-        updateAvgRatingDisplay();
+        document.title = training.name + ' - ' + t('app_title');
+        updateAvgRating();
     }
 
-    function updateAvgRatingDisplay() {
-        const training = getTraining(); if (!training) return;
-        const avg = getAverageRating(training);
+    function updateAvgRating() {
+        var training = getTraining();
+        if (!training) return;
+        var avg = getAverageRating(training);
         if (training.exercises.length === 0 || avg === 0) {
-            trainingAvgRating.innerHTML = `<span class="avg-label">${t('avg_rating_label')}</span> <span class="avg-no-data">${t('avg_no_data')}</span>`;
+            avgRatingEl.innerHTML = '<span class="avg-label">' + t('avg_rating_label') + '</span> <span class="avg-no-data">' + t('avg_no_data') + '</span>';
         } else {
-            trainingAvgRating.innerHTML = `<span class="avg-label">${t('avg_rating_label')}</span> ${renderStarsReadonly(avg)} <span class="avg-value">(${avg.toFixed(1)}/${CONFIG.MAX_STARS})</span>`;
+            avgRatingEl.innerHTML = '<span class="avg-label">' + t('avg_rating_label') + '</span> ' + renderStarsReadonly(avg) + ' <span class="avg-value">(' + avg.toFixed(1) + '/' + CONFIG.MAX_STARS + ')</span>';
         }
     }
 
-    function populateFilterTypeDropdown() {
-        const current = filterType.value;
-        filterType.innerHTML = `<option value="">${t('filter_all_types')}</option>`;
-        Object.keys(EXERCISE_DATA_LOCALIZED).forEach(type => {
-            const o = document.createElement('option'); o.value = type; o.textContent = type;
-            filterType.appendChild(o);
+    function populateTypeFilter() {
+        var current = filterType.value;
+        filterType.innerHTML = '<option value="">' + t('filter_all_types') + '</option>';
+        Object.keys(EXDATA).forEach(function (type) {
+            var opt = document.createElement('option');
+            opt.value = type;
+            opt.textContent = type;
+            filterType.appendChild(opt);
         });
         filterType.value = current;
     }
 
-    function buildTypeOptions(selectedType) {
-        let html = `<option value="">${t('select_type_placeholder')}</option>`;
-        Object.keys(EXERCISE_DATA_LOCALIZED).forEach(type => {
-            html += `<option value="${type}" ${type === selectedType ? 'selected' : ''}>${type}</option>`;
+    function buildTypeOptions(selected) {
+        var html = '<option value="">' + t('select_type_placeholder') + '</option>';
+        Object.keys(EXDATA).forEach(function (type) {
+            html += '<option value="' + type + '" ' + (type === selected ? 'selected' : '') + '>' + type + '</option>';
         });
         return html;
     }
 
-    function buildExerciseOptions(type, selectedName) {
-        let html = `<option value="">${t('select_exercise_placeholder')}</option>`;
-        if (type && EXERCISE_DATA_LOCALIZED[type]) {
-            EXERCISE_DATA_LOCALIZED[type].forEach(name => {
-                html += `<option value="${name}" ${name === selectedName ? 'selected' : ''}>${name}</option>`;
+    function buildExerciseOptions(type, selected) {
+        var html = '<option value="">' + t('select_exercise_placeholder') + '</option>';
+        if (type && EXDATA[type]) {
+            EXDATA[type].forEach(function (name) {
+                html += '<option value="' + name + '" ' + (name === selected ? 'selected' : '') + '>' + name + '</option>';
             });
         }
         return html;
     }
 
-    function getFilteredAndSortedExercises(training) {
-        let exercises = training.exercises.map((ex, i) => ({ ...ex, _origIndex: i }));
-        if (filterType.value) exercises = exercises.filter(ex => ex.type === filterType.value);
-        const q = filterExercise.value.trim().toLowerCase();
-        if (q) exercises = exercises.filter(ex => (ex.name || '').toLowerCase().includes(q));
-        if (exSortColumn) {
-            exercises.sort((a, b) => {
-                let va, vb;
-                if (exSortColumn === 'type') { va = (a.type || '').toLowerCase(); vb = (b.type || '').toLowerCase(); }
-                else if (exSortColumn === 'name') { va = (a.name || '').toLowerCase(); vb = (b.name || '').toLowerCase(); }
-                else if (exSortColumn === 'rating') { va = a.rating || 0; vb = b.rating || 0; }
-                else if (exSortColumn === 'total') { va = getTotalReps(a); vb = getTotalReps(b); }
-                else if (exSortColumn === 'load') { va = (a.load || '').toLowerCase(); vb = (b.load || '').toLowerCase(); }
-                if (va < vb) return exSortDirection === 'asc' ? -1 : 1;
-                if (va > vb) return exSortDirection === 'asc' ? 1 : -1;
+    function getFilteredExercises(training) {
+        var exercises = training.exercises.map(function (ex, i) {
+            return Object.assign({}, ex, { _idx: i });
+        });
+
+        if (filterType.value) exercises = exercises.filter(function (ex) { return ex.type === filterType.value; });
+        var q = filterExercise.value.trim().toLowerCase();
+        if (q) exercises = exercises.filter(function (ex) { return (ex.name || '').toLowerCase().includes(q); });
+
+        if (exSortCol) {
+            exercises.sort(function (a, b) {
+                var va, vb;
+                if (exSortCol === 'type') { va = (a.type || '').toLowerCase(); vb = (b.type || '').toLowerCase(); }
+                else if (exSortCol === 'name') { va = (a.name || '').toLowerCase(); vb = (b.name || '').toLowerCase(); }
+                else if (exSortCol === 'rating') { va = a.rating || 0; vb = b.rating || 0; }
+                else if (exSortCol === 'total') { va = getTotalReps(a); vb = getTotalReps(b); }
+                else if (exSortCol === 'load') { va = (a.load || '').toLowerCase(); vb = (b.load || '').toLowerCase(); }
+                if (va < vb) return exSortDir === 'asc' ? -1 : 1;
+                if (va > vb) return exSortDir === 'asc' ? 1 : -1;
                 return 0;
             });
         }
@@ -657,138 +843,224 @@ function initTrainingPage() {
     }
 
     function updateExSortIcons() {
-        ['sortIconType', 'sortIconExName', 'sortIconExRating', 'sortIconExTotal', 'sortIconExLoad'].forEach(id => document.getElementById(id).textContent = '');
-        if (!exSortColumn) return;
-        const icon = exSortDirection === 'asc' ? '▲' : '▼';
-        const map = { type: 'sortIconType', name: 'sortIconExName', rating: 'sortIconExRating', total: 'sortIconExTotal', load: 'sortIconExLoad' };
-        if (map[exSortColumn]) document.getElementById(map[exSortColumn]).textContent = icon;
+        ['sortIconType', 'sortIconExName', 'sortIconExRating', 'sortIconExTotal', 'sortIconExLoad'].forEach(function (id) {
+            document.getElementById(id).textContent = '';
+        });
+        if (!exSortCol) return;
+        var icon = exSortDir === 'asc' ? '▲' : '▼';
+        var map = { type: 'sortIconType', name: 'sortIconExName', rating: 'sortIconExRating', total: 'sortIconExTotal', load: 'sortIconExLoad' };
+        if (map[exSortCol]) document.getElementById(map[exSortCol]).textContent = icon;
     }
 
-    function buildInteractiveStars(rating, idx) {
-        let html = `<div class="star-rating-interactive" data-index="${idx}">`;
-        for (let i = 1; i <= CONFIG.MAX_STARS; i++) html += `<span class="star-btn ${i <= rating ? 'star-active' : ''}" data-star="${i}" data-index="${idx}">★</span>`;
+    function buildStars(rating, idx) {
+        var html = '<div class="star-rating-interactive" data-index="' + idx + '">';
+        for (var i = 1; i <= CONFIG.MAX_STARS; i++) {
+            html += '<span class="star-btn ' + (i <= rating ? 'star-active' : '') + '" data-star="' + i + '" data-index="' + idx + '">★</span>';
+        }
         return html + '</div>';
     }
 
     function renderExercises() {
-        const training = getTraining(); if (!training) return;
+        var training = getTraining();
+        if (!training) return;
         exercisesBody.innerHTML = '';
         toggleExFiltersBtn.style.display = training.exercises.length === 0 ? 'none' : '';
-        const exercises = getFilteredAndSortedExercises(training);
+
+        var exercises = getFilteredExercises(training);
+
         if (exercises.length === 0) {
-            emptyMessage.style.display = 'block';
-            emptyMessage.textContent = training.exercises.length === 0 ? t('empty_no_exercises') : t('empty_no_exercise_filter_match');
-            document.getElementById('exercisesTable').style.display = 'none'; return;
+            emptyMsg.style.display = 'block';
+            emptyMsg.textContent = training.exercises.length === 0 ? t('empty_no_exercises') : t('empty_no_exercise_filter_match');
+            document.getElementById('exercisesTable').style.display = 'none';
+            return;
         }
-        emptyMessage.style.display = 'none';
+
+        emptyMsg.style.display = 'none';
         document.getElementById('exercisesTable').style.display = 'table';
         updateExSortIcons();
 
-        exercises.forEach(ex => {
-            const i = ex._origIndex;
-            const tr = document.createElement('tr'); tr.dataset.index = i;
-            const s = ex.series || []; const total = getTotalReps(ex);
-            let seriesCells = '';
-            for (let si = 0; si < CONFIG.MAX_SERIES; si++) {
-                seriesCells += `<td class="td-series"><input type="number" class="inline-input inline-series" data-index="${i}" data-series="${si}" min="0" placeholder="-" value="${s[si] != null ? s[si] : ''}"></td>`;
+        exercises.forEach(function (ex) {
+            var i = ex._idx;
+            var row = document.createElement('tr');
+            row.dataset.index = i;
+            var s = ex.series || [];
+            var total = getTotalReps(ex);
+
+            var seriesHtml = '';
+            for (var si = 0; si < CONFIG.MAX_SERIES; si++) {
+                seriesHtml += '<td class="td-series"><input type="number" class="inline-input inline-series" data-index="' + i + '" data-series="' + si + '" min="0" placeholder="-" value="' + (s[si] != null ? s[si] : '') + '"></td>';
             }
-            tr.innerHTML = `
-                <td class="td-type"><select class="inline-select inline-type" data-index="${i}">${buildTypeOptions(ex.type)}</select></td>
-                <td class="td-name"><select class="inline-select inline-name" data-index="${i}">${buildExerciseOptions(ex.type, ex.name)}</select></td>
-                <td class="td-load"><input type="text" class="inline-input inline-load" data-index="${i}" placeholder="${t('load_placeholder')}" value="${escapeHtml(ex.load || '')}"></td>
-                ${seriesCells}
-                <td class="td-total" data-index="${i}">${total > 0 ? total : '-'}</td>
-                <td class="td-rating-interactive">${buildInteractiveStars(ex.rating || 0, i)}</td>
-                <td class="td-action"><button class="btn btn-small btn-delete btn-delete-row" data-index="${i}" title="${t('btn_delete_exercise_title')}">✕</button></td>
-            `;
-            exercisesBody.appendChild(tr);
+
+            row.innerHTML =
+                '<td class="td-type"><select class="inline-select inline-type" data-index="' + i + '">' + buildTypeOptions(ex.type) + '</select></td>' +
+                '<td class="td-name"><select class="inline-select inline-name" data-index="' + i + '">' + buildExerciseOptions(ex.type, ex.name) + '</select></td>' +
+                '<td class="td-load"><input type="text" class="inline-input inline-load" data-index="' + i + '" placeholder="' + t('load_placeholder') + '" value="' + escapeHtml(ex.load || '') + '"></td>' +
+                seriesHtml +
+                '<td class="td-total" data-index="' + i + '">' + (total > 0 ? total : '-') + '</td>' +
+                '<td class="td-rating-interactive">' + buildStars(ex.rating || 0, i) + '</td>' +
+                '<td class="td-action"><button class="btn btn-small btn-delete btn-delete-row" data-index="' + i + '" title="' + t('btn_delete_exercise_title') + '">✕</button></td>';
+
+            exercisesBody.appendChild(row);
         });
-        updateAvgRatingDisplay();
+        updateAvgRating();
     }
 
     function updateTotalCell(index) {
-        const training = getTraining();
+        var training = getTraining();
         if (!training || !training.exercises[index]) return;
-        const cell = exercisesBody.querySelector(`.td-total[data-index="${index}"]`);
-        if (cell) { const tot = getTotalReps(training.exercises[index]); cell.textContent = tot > 0 ? tot : '-'; }
+        var total = getTotalReps(training.exercises[index]);
+        var cell = exercisesBody.querySelector('.td-total[data-index="' + index + '"]');
+        if (cell) cell.textContent = total > 0 ? total : '-';
     }
 
     function saveField(index, field, value) {
-        const trainings = getTrainings();
-        const training = trainings.find(t => t.id === trainingId);
+        var trainings = getTrainings();
+        var training = trainings.find(function (x) { return x.id === trainingId; });
         if (!training || !training.exercises[index]) return;
-        if (field === 'type') { training.exercises[index].type = value; training.exercises[index].name = ''; saveTrainings(trainings); renderExercises(); }
-        else if (field === 'name') { training.exercises[index].name = value; saveTrainings(trainings); }
-        else if (field === 'load') { training.exercises[index].load = value; saveTrainings(trainings); }
-        else if (field === 'series') {
+
+        if (field === 'type') {
+            training.exercises[index].type = value;
+            training.exercises[index].name = '';
+            saveTrainings(trainings);
+            renderExercises();
+        } else if (field === 'name') {
+            training.exercises[index].name = value;
+            saveTrainings(trainings);
+        } else if (field === 'load') {
+            training.exercises[index].load = value;
+            saveTrainings(trainings);
+        } else if (field === 'series') {
             training.exercises[index].series = normalizeSeries(training.exercises[index].series);
             training.exercises[index].series[value.seriesIndex] = value.reps !== '' ? parseInt(value.reps) : null;
-            saveTrainings(trainings); updateTotalCell(index);
-        } else if (field === 'rating') { training.exercises[index].rating = value; saveTrainings(trainings); updateAvgRatingDisplay(); }
+            saveTrainings(trainings);
+            updateTotalCell(index);
+        } else if (field === 'rating') {
+            training.exercises[index].rating = value;
+            saveTrainings(trainings);
+            updateAvgRating();
+        }
     }
 
-    // ---- Zdarzenia ----
-    exercisesBody.addEventListener('change', (e) => {
-        const tgt = e.target; const idx = parseInt(tgt.dataset.index); if (isNaN(idx)) return;
+    // ---- Zdarzenia tabeli ----
+    exercisesBody.addEventListener('change', function (e) {
+        var tgt = e.target;
+        var idx = parseInt(tgt.dataset.index);
+        if (isNaN(idx)) return;
+
         if (tgt.classList.contains('inline-type')) saveField(idx, 'type', tgt.value);
         else if (tgt.classList.contains('inline-name')) saveField(idx, 'name', tgt.value);
         else if (tgt.classList.contains('inline-load')) saveField(idx, 'load', tgt.value);
-        else if (tgt.classList.contains('inline-series')) saveField(idx, 'series', { seriesIndex: parseInt(tgt.dataset.series), reps: tgt.value });
+        else if (tgt.classList.contains('inline-series')) {
+            saveField(idx, 'series', { seriesIndex: parseInt(tgt.dataset.series), reps: tgt.value });
+        }
     });
-    exercisesBody.addEventListener('input', (e) => {
-        const tgt = e.target; const idx = parseInt(tgt.dataset.index); if (isNaN(idx)) return;
-        if (tgt.classList.contains('inline-series')) saveField(idx, 'series', { seriesIndex: parseInt(tgt.dataset.series), reps: tgt.value });
-        else if (tgt.classList.contains('inline-load')) saveField(idx, 'load', tgt.value);
+
+    exercisesBody.addEventListener('input', function (e) {
+        var tgt = e.target;
+        var idx = parseInt(tgt.dataset.index);
+        if (isNaN(idx)) return;
+
+        if (tgt.classList.contains('inline-series')) {
+            saveField(idx, 'series', { seriesIndex: parseInt(tgt.dataset.series), reps: tgt.value });
+        } else if (tgt.classList.contains('inline-load')) {
+            saveField(idx, 'load', tgt.value);
+        }
     });
-    exercisesBody.addEventListener('click', (e) => {
-        const tgt = e.target;
+
+    exercisesBody.addEventListener('click', function (e) {
+        var tgt = e.target;
+
         if (tgt.classList.contains('star-btn')) {
-            const idx = parseInt(tgt.dataset.index); const star = parseInt(tgt.dataset.star);
+            var idx = parseInt(tgt.dataset.index);
+            var star = parseInt(tgt.dataset.star);
             if (isNaN(idx) || isNaN(star)) return;
-            const training = getTraining();
-            const cur = (training && training.exercises[idx]) ? (training.exercises[idx].rating || 0) : 0;
-            const newR = cur === star ? 0 : star;
-            saveField(idx, 'rating', newR);
-            const container = tgt.closest('.star-rating-interactive');
-            if (container) container.querySelectorAll('.star-btn').forEach(btn => { btn.classList.toggle('star-active', parseInt(btn.dataset.star) <= newR); });
+
+            var training = getTraining();
+            var current = (training && training.exercises[idx]) ? (training.exercises[idx].rating || 0) : 0;
+            var newRating = current === star ? 0 : star;
+            saveField(idx, 'rating', newRating);
+
+            var container = tgt.closest('.star-rating-interactive');
+            if (container) {
+                container.querySelectorAll('.star-btn').forEach(function (btn) {
+                    btn.classList.toggle('star-active', parseInt(btn.dataset.star) <= newRating);
+                });
+            }
             return;
         }
+
         if (tgt.classList.contains('btn-delete-row')) {
-            const idx = parseInt(tgt.dataset.index);
-            if (!isNaN(idx)) { deleteExercise(trainingId, idx); renderExercises(); }
+            var idx2 = parseInt(tgt.dataset.index);
+            if (!isNaN(idx2)) {
+                deleteExercise(trainingId, idx2);
+                renderExercises();
+            }
         }
     });
-    exercisesBody.addEventListener('mouseover', (e) => {
+
+    exercisesBody.addEventListener('mouseover', function (e) {
         if (!e.target.classList.contains('star-btn')) return;
-        const c = e.target.closest('.star-rating-interactive'); const h = parseInt(e.target.dataset.star);
-        if (c && !isNaN(h)) c.querySelectorAll('.star-btn').forEach(btn => { btn.classList.toggle('star-hover', parseInt(btn.dataset.star) <= h); });
+        var container = e.target.closest('.star-rating-interactive');
+        var hoverStar = parseInt(e.target.dataset.star);
+        if (container && !isNaN(hoverStar)) {
+            container.querySelectorAll('.star-btn').forEach(function (btn) {
+                btn.classList.toggle('star-hover', parseInt(btn.dataset.star) <= hoverStar);
+            });
+        }
     });
-    exercisesBody.addEventListener('mouseout', (e) => {
+
+    exercisesBody.addEventListener('mouseout', function (e) {
         if (!e.target.classList.contains('star-btn')) return;
-        const c = e.target.closest('.star-rating-interactive');
-        if (c) c.querySelectorAll('.star-btn').forEach(btn => btn.classList.remove('star-hover'));
+        var container = e.target.closest('.star-rating-interactive');
+        if (container) {
+            container.querySelectorAll('.star-btn').forEach(function (btn) {
+                btn.classList.remove('star-hover');
+            });
+        }
     });
-    document.querySelectorAll('#exercisesTable th.sortable').forEach(th => {
-        th.addEventListener('click', () => {
-            const col = th.dataset.sort;
-            if (exSortColumn === col) exSortDirection = exSortDirection === 'asc' ? 'desc' : 'asc';
-            else { exSortColumn = col; exSortDirection = 'asc'; }
+
+    // ---- Sortowanie ----
+    document.querySelectorAll('#exercisesTable th.sortable').forEach(function (th) {
+        th.addEventListener('click', function () {
+            var col = th.dataset.sort;
+            if (exSortCol === col) exSortDir = exSortDir === 'asc' ? 'desc' : 'asc';
+            else { exSortCol = col; exSortDir = 'asc'; }
             renderExercises();
         });
     });
+
+    // ---- Filtry ----
     filterType.addEventListener('change', renderExercises);
     filterExercise.addEventListener('input', renderExercises);
-    document.getElementById('clearExerciseFiltersBtn').addEventListener('click', () => { filterType.value = ''; filterExercise.value = ''; exSortColumn = null; renderExercises(); });
-    document.getElementById('addExerciseBtn').addEventListener('click', () => {
-        filterType.value = ''; filterExercise.value = ''; exSortColumn = null;
-        addExercise(trainingId, { type: '', name: '', load: '', series: new Array(CONFIG.MAX_SERIES).fill(null), rating: 0 });
+    document.getElementById('clearExerciseFiltersBtn').addEventListener('click', function () {
+        filterType.value = '';
+        filterExercise.value = '';
+        exSortCol = null;
         renderExercises();
-        const rows = exercisesBody.querySelectorAll('tr');
-        if (rows.length > 0) { const sel = rows[rows.length - 1].querySelector('.inline-type'); if (sel) sel.focus(); }
+    });
+
+    // ---- Dodaj ćwiczenie ----
+    document.getElementById('addExerciseBtn').addEventListener('click', function () {
+        filterType.value = '';
+        filterExercise.value = '';
+        exSortCol = null;
+
+        var emptySeries = [];
+        for (var i = 0; i < CONFIG.MAX_SERIES; i++) emptySeries.push(null);
+
+        addExercise(trainingId, { type: '', name: '', load: '', series: emptySeries, rating: 0 });
+        renderExercises();
+
+        var rows = exercisesBody.querySelectorAll('tr');
+        if (rows.length > 0) {
+            var lastSelect = rows[rows.length - 1].querySelector('.inline-type');
+            if (lastSelect) lastSelect.focus();
+        }
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     });
 
-    populateFilterTypeDropdown();
+    // ---- Init ----
+    populateTypeFilter();
     renderHeader();
     renderExercises();
 }
