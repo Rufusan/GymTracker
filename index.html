@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="screen-orientation" content="portrait">
     <title>Dziennik Treningowy</title>
     <link rel="stylesheet" href="styles.css">
     <link rel="manifest" href="manifest.json">
@@ -15,34 +16,23 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 </head>
 <body>
-    <!-- Przycisk ustawień -->
     <button class="settings-toggle-btn" id="settingsToggleBtn" title="Settings">⚙</button>
-
-    <!-- Panel ustawień -->
     <div class="settings-overlay" id="settingsOverlay">
         <div class="settings-panel" id="settingsPanel">
             <div class="settings-header">
-                <h2 id="settingsTitle">⚙ Ustawienia</h2>
+                <h2 id="settingsTitle"></h2>
                 <button class="settings-close-btn" id="settingsCloseBtn">✕</button>
             </div>
             <div class="settings-body">
-                <!-- Motyw -->
                 <div class="settings-item">
-                    <div class="settings-item-label">
-                        <span class="settings-item-icon">🎨</span>
-                        <span id="settingsThemeLabel">Motyw</span>
-                    </div>
+                    <div class="settings-item-label"><span class="settings-item-icon">🎨</span><span id="settingsThemeLabel"></span></div>
                     <div class="settings-theme-switcher" id="themeSwitcher">
                         <button class="theme-btn" data-theme="light" id="themeBtnLight">☀️</button>
                         <button class="theme-btn" data-theme="dark" id="themeBtnDark">🌙</button>
                     </div>
                 </div>
-                <!-- Język -->
                 <div class="settings-item">
-                    <div class="settings-item-label">
-                        <span class="settings-item-icon">🌍</span>
-                        <span id="settingsLangLabel">Język</span>
-                    </div>
+                    <div class="settings-item-label"><span class="settings-item-icon">🌍</span><span id="settingsLangLabel"></span></div>
                     <div class="settings-lang-switcher" id="langSwitcher"></div>
                 </div>
             </div>
@@ -50,60 +40,45 @@
     </div>
 
     <div class="container">
-        <h1>🏋️ Dziennik Treningowy</h1>
-
+        <h1></h1>
         <div class="top-actions">
-            <button class="btn btn-primary" id="addTrainingBtn">+ Dodaj trening</button>
-            <button class="btn btn-edit" id="editSelectedBtn" disabled>✎ Edytuj</button>
-            <button class="btn btn-pdf" id="downloadPdfBtn" disabled>⤓ PDF</button>
-            <button class="btn btn-delete" id="deleteSelectedBtn" disabled>✕ Usuń</button>
-            <button class="btn btn-secondary btn-toggle-filters" id="toggleFiltersBtn">🔍 Filtry</button>
-            <button class="btn btn-secondary" id="toggleDataBtn">💾 Dane</button>
+            <button class="btn btn-primary" id="addTrainingBtn"></button>
+            <button class="btn btn-edit" id="editSelectedBtn" disabled></button>
+            <button class="btn btn-pdf" id="downloadPdfBtn" disabled></button>
+            <button class="btn btn-delete" id="deleteSelectedBtn" disabled></button>
+            <button class="btn btn-secondary btn-toggle-filters" id="toggleFiltersBtn"></button>
+            <button class="btn btn-secondary" id="toggleDataBtn"></button>
         </div>
-
         <div class="data-bar collapsed" id="dataBar">
             <div class="data-bar-inner">
                 <p class="data-bar-info"></p>
                 <div class="data-bar-actions">
                     <button class="btn btn-small btn-primary" id="exportJsonBtn"></button>
                     <button class="btn btn-small btn-secondary" id="importJsonBtn"></button>
-                    <input type="file" id="importFileInput" accept=".json,application/json" style="display:none">
+                    <input type="file" id="importFileInput" accept=".json" style="display:none">
                 </div>
             </div>
         </div>
-
         <div class="filters-bar collapsed" id="filtersBar">
-            <div class="filter-group">
-                <label for="filterName"></label>
-                <input type="text" id="filterName">
-            </div>
-            <div class="filter-group">
-                <label for="filterDateFrom"></label>
-                <input type="date" id="filterDateFrom">
-            </div>
-            <div class="filter-group">
-                <label for="filterDateTo"></label>
-                <input type="date" id="filterDateTo">
-            </div>
+            <div class="filter-group"><label for="filterName"></label><input type="text" id="filterName"></div>
+            <div class="filter-group"><label for="filterDateFrom"></label><input type="date" id="filterDateFrom"></div>
+            <div class="filter-group"><label for="filterDateTo"></label><input type="date" id="filterDateTo"></div>
             <button class="btn btn-secondary btn-small" id="clearFiltersBtn"></button>
         </div>
-
         <div class="selection-toolbar" id="selectionToolbar">
             <span id="selectionCount"></span>
             <button class="btn btn-small btn-secondary" id="clearSelectionBtn"></button>
         </div>
-
         <div class="table-wrapper">
             <table id="trainingsTable">
-                <thead>
-                    <tr>
-                        <th class="th-checkbox"><input type="checkbox" id="selectAllCheckbox"></th>
-                        <th class="sortable" data-sort="name"><span class="sort-icon" id="sortIconName"></span></th>
-                        <th class="sortable" data-sort="date"><span class="sort-icon" id="sortIconDate"></span></th>
-                        <th class="sortable" data-sort="exercises"><span class="sort-icon" id="sortIconExercises"></span></th>
-                        <th class="sortable" data-sort="rating"><span class="sort-icon" id="sortIconRating"></span></th>
-                    </tr>
-                </thead>
+                <thead><tr>
+                    <th class="th-checkbox"><input type="checkbox" id="selectAllCheckbox"></th>
+                    <th class="sortable" data-sort="name"><span class="sort-icon" id="sortIconName"></span></th>
+                    <th class="sortable" data-sort="date"><span class="sort-icon" id="sortIconDate"></span></th>
+                    <th class="sortable" data-sort="weight"><span class="sort-icon" id="sortIconWeight"></span></th>
+                    <th class="sortable" data-sort="exercises"><span class="sort-icon" id="sortIconExercises"></span></th>
+                    <th class="sortable" data-sort="rating"><span class="sort-icon" id="sortIconRating"></span></th>
+                </tr></thead>
                 <tbody id="trainingsBody"></tbody>
             </table>
         </div>
@@ -114,13 +89,9 @@
         <div class="modal">
             <h2 id="trainingModalTitle"></h2>
             <form id="trainingForm">
+                <div class="form-group"><label for="trainingName"></label><input type="text" id="trainingName" required></div>
                 <div class="form-group">
-                    <label for="trainingName"></label>
-                    <input type="text" id="trainingName" required>
-                </div>
-                <div class="form-group">
-                    <label for="trainingDate"></label>
-                    <input type="date" id="trainingDate" required>
+                    <label for="trainingDate"></label><input type="date" id="trainingDate" required>
                     <div class="date-helpers">
                         <button type="button" class="date-helper-btn" data-offset="0"></button>
                         <button type="button" class="date-helper-btn" data-offset="-1"></button>
@@ -128,6 +99,7 @@
                         <button type="button" class="date-helper-btn" data-offset="-3"></button>
                     </div>
                 </div>
+                <div class="form-group"><label for="trainingWeight"></label><input type="number" id="trainingWeight" step="0.1" min="0" max="500"></div>
                 <div class="modal-actions">
                     <button type="button" class="btn btn-secondary" id="cancelTrainingBtn"></button>
                     <button type="submit" class="btn btn-primary"></button>
@@ -138,9 +110,7 @@
 
     <div class="modal-overlay" id="importModal">
         <div class="modal">
-            <h2></h2>
-            <p class="import-warning"></p>
-            <p class="import-detail" id="importDetail"></p>
+            <h2></h2><p class="import-warning"></p><p class="import-detail" id="importDetail"></p>
             <div class="modal-actions import-actions">
                 <button type="button" class="btn btn-secondary" id="importCancelBtn"></button>
                 <button type="button" class="btn btn-primary" id="importMergeBtn"></button>

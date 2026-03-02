@@ -12,11 +12,7 @@ const CONFIG = {
     LANGUAGE: 'auto',
     AVAILABLE_LANGUAGES: ['pl', 'en'],
     FALLBACK_LANGUAGE: 'en',
-
-    // Motyw: 'auto', 'light', 'dark'
-    // 'auto' = wykryj z preferencji systemowych
     THEME: 'auto',
-
     DEFAULT_SORT_COLUMN: 'date',
     DEFAULT_SORT_DIRECTION: 'desc',
     DATE_HELPERS: [
@@ -33,7 +29,8 @@ const CONFIG = {
         'back': ['deadlift', 'pull_up', 'chin_up', 'barbell_row', 'dumbbell_row', 'lat_pulldown', 'seated_cable_row', 't_bar_row'],
         'shoulders': ['overhead_press', 'dumbbell_shoulder_press', 'lateral_raise', 'front_raise', 'rear_delt_fly', 'arnold_press', 'upright_row', 'face_pull'],
         'legs': ['squat', 'front_squat', 'leg_press', 'lunges', 'romanian_deadlift', 'leg_extension', 'leg_curl', 'calf_raise', 'bulgarian_split_squat', 'hip_thrust'],
-        'arms': ['bicep_curl', 'hammer_curl', 'preacher_curl', 'tricep_dip', 'tricep_pushdown', 'overhead_tricep_extension', 'skull_crusher', 'concentration_curl'],
+        'biceps': ['bicep_curl', 'hammer_curl', 'preacher_curl', 'concentration_curl', 'incline_dumbbell_curl', 'cable_curl'],
+        'triceps': ['tricep_dip', 'tricep_pushdown', 'overhead_tricep_extension', 'skull_crusher', 'close_grip_bench_press', 'tricep_kickback'],
         'core': ['plank', 'crunch', 'russian_twist', 'leg_raise', 'ab_wheel_rollout', 'mountain_climber', 'dead_bug', 'hanging_knee_raise'],
         'cardio': ['running', 'cycling', 'rowing', 'jump_rope', 'elliptical', 'stair_climber', 'swimming', 'burpees']
     }
