@@ -2,192 +2,92 @@
 // Dziennik Treningowy - Logika
 // ========================================
 
-// ---- LocalStorage ----
-function getTrainings() { const d = localStorage.getItem(CONFIG.STORAGE_KEY); return d ? JSON.parse(d) : []; }
+function getTrainings() { var d = localStorage.getItem(CONFIG.STORAGE_KEY); return d ? JSON.parse(d) : []; }
 function saveTrainings(ts) { localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(ts)); }
 function generateId() { return Date.now().toString(36) + Math.random().toString(36).substring(2, 8); }
 
-// ---- CRUD Treningów ----
-function addTraining(name, date) {
-    const ts = getTrainings();
-    const tr = { id: generateId(), name, date, exercises: [] };
+function addTraining(name, date, bodyWeight) {
+    var ts = getTrainings();
+    var tr = { id: generateId(), name: name, date: date, bodyWeight: bodyWeight || null, exercises: [] };
     ts.push(tr); saveTrainings(ts); return tr;
 }
-function updateTraining(id, u) {
-    const ts = getTrainings();
-    const i = ts.findIndex(x => x.id === id);
-    if (i !== -1) { ts[i] = { ...ts[i], ...u }; saveTrainings(ts); }
-}
-function deleteTraining(id) { saveTrainings(getTrainings().filter(x => x.id !== id)); }
+function updateTraining(id, u) { var ts = getTrainings(); var i = ts.findIndex(function (x) { return x.id === id; }); if (i !== -1) { ts[i] = Object.assign({}, ts[i], u); saveTrainings(ts); } }
+function deleteTraining(id) { saveTrainings(getTrainings().filter(function (x) { return x.id !== id; })); }
 
-// ---- CRUD Ćwiczeń ----
-function addExercise(tid, ex) {
-    const ts = getTrainings();
-    const tr = ts.find(x => x.id === tid);
-    if (tr) {
-        ex.series = normalizeSeries(ex.series);
-        if (ex.rating === undefined) ex.rating = 0;
-        if (ex.load === undefined) ex.load = '';
-        tr.exercises.push(ex); saveTrainings(ts);
-    }
+function addExercise(tid, ex) { var ts = getTrainings(); var tr = ts.find(function (x) { return x.id === tid; }); if (tr) { ex.series = normalizeSeries(ex.series); if (ex.rating === undefined) ex.rating = 0; if (ex.load === undefined) ex.load = ''; tr.exercises.push(ex); saveTrainings(ts); } }
+function deleteExercise(tid, idx) { var ts = getTrainings(); var tr = ts.find(function (x) { return x.id === tid; }); if (tr) { tr.exercises.splice(idx, 1); saveTrainings(ts); } }
+function moveExercise(tid, fromIdx, toIdx) {
+    var ts = getTrainings(); var tr = ts.find(function (x) { return x.id === tid; });
+    if (!tr || fromIdx < 0 || toIdx < 0 || fromIdx >= tr.exercises.length || toIdx >= tr.exercises.length) return;
+    var item = tr.exercises.splice(fromIdx, 1)[0];
+    tr.exercises.splice(toIdx, 0, item);
+    saveTrainings(ts);
 }
-function deleteExercise(tid, idx) {
-    const ts = getTrainings();
-    const tr = ts.find(x => x.id === tid);
-    if (tr) { tr.exercises.splice(idx, 1); saveTrainings(ts); }
-}
-function normalizeSeries(s) {
-    const r = [];
-    for (let i = 0; i < CONFIG.MAX_SERIES; i++) {
-        r.push(s && s[i] !== undefined && s[i] !== null && s[i] !== '' ? s[i] : null);
-    }
-    return r;
-}
+function normalizeSeries(s) { var r = []; for (var i = 0; i < CONFIG.MAX_SERIES; i++) r.push(s && s[i] !== undefined && s[i] !== null && s[i] !== '' ? s[i] : null); return r; }
 
-// ---- Oceny ----
-function getAverageRating(tr) {
-    if (!tr || !tr.exercises || !tr.exercises.length) return 0;
-    const r = tr.exercises.filter(e => (e.rating || 0) > 0);
-    if (!r.length) return 0;
-    return r.reduce((a, e) => a + (e.rating || 0), 0) / r.length;
-}
-function renderStarsReadonly(rating) {
-    let h = '<span class="star-rating-readonly">';
-    for (let i = 1; i <= CONFIG.MAX_STARS; i++) {
-        if (rating >= i) h += '<span class="star-ro star-full">★</span>';
-        else if (rating >= i - 0.5) h += '<span class="star-ro star-half">★</span>';
-        else h += '<span class="star-ro star-empty">★</span>';
-    }
-    return h + '</span>';
-}
+function getAverageRating(tr) { if (!tr || !tr.exercises || !tr.exercises.length) return 0; var r = tr.exercises.filter(function (e) { return (e.rating || 0) > 0; }); if (!r.length) return 0; return r.reduce(function (a, e) { return a + (e.rating || 0); }, 0) / r.length; }
+function renderStarsReadonly(r) { var h = '<span class="star-rating-readonly">'; for (var i = 1; i <= CONFIG.MAX_STARS; i++) { if (r >= i) h += '<span class="star-ro star-full">★</span>'; else if (r >= i - 0.5) h += '<span class="star-ro star-half">★</span>'; else h += '<span class="star-ro star-empty">★</span>'; } return h + '</span>'; }
+function getTotalReps(ex) { var s = ex.series || []; var tot = 0; for (var i = 0; i < CONFIG.MAX_SERIES; i++) if (s[i] != null && !isNaN(s[i])) tot += s[i]; return tot; }
 
-// ---- Suma powtórzeń ----
-function getTotalReps(ex) {
-    const s = ex.series || [];
-    let tot = 0;
-    for (let i = 0; i < CONFIG.MAX_SERIES; i++) {
-        if (s[i] != null && !isNaN(s[i])) tot += s[i];
-    }
-    return tot;
-}
-
-// ---- Import/Eksport ----
-function exportData() {
-    return JSON.stringify({
-        version: CONFIG.DATA_VERSION,
-        exportedAt: new Date().toISOString(),
-        trainings: getTrainings()
-    }, null, 2);
-}
+function exportData() { return JSON.stringify({ version: CONFIG.DATA_VERSION, exportedAt: new Date().toISOString(), trainings: getTrainings() }, null, 2); }
 function importData(data, mode) {
-    const norm = x => {
-        if (!x.id) x.id = generateId();
-        if (!Array.isArray(x.exercises)) x.exercises = [];
-        x.exercises.forEach(e => {
-            e.series = normalizeSeries(e.series);
-            if (e.rating === undefined) e.rating = 0;
-            if (e.load === undefined) e.load = '';
-        });
-    };
-    if (mode === 'replace') {
-        data.forEach(norm);
-        saveTrainings(data);
-    } else {
-        const ex = getTrainings();
-        const ids = new Set(ex.map(x => x.id));
-        data.forEach(x => {
-            norm(x);
-            if (ids.has(x.id) || ex.some(e => e.name === x.name && e.date === x.date)) return;
-            ex.push(x); ids.add(x.id);
-        });
-        saveTrainings(ex);
-    }
+    var norm = function (x) { if (!x.id) x.id = generateId(); if (!Array.isArray(x.exercises)) x.exercises = []; if (x.bodyWeight === undefined) x.bodyWeight = null; x.exercises.forEach(function (e) { e.series = normalizeSeries(e.series); if (e.rating === undefined) e.rating = 0; if (e.load === undefined) e.load = ''; }); };
+    if (mode === 'replace') { data.forEach(norm); saveTrainings(data); }
+    else { var ex = getTrainings(); var ids = new Set(ex.map(function (x) { return x.id; })); data.forEach(function (x) { norm(x); if (ids.has(x.id) || ex.some(function (e) { return e.name === x.name && e.date === x.date; })) return; ex.push(x); ids.add(x.id); }); saveTrainings(ex); }
 }
-
-// ---- Pomocniki ----
-function escapeHtml(s) {
-    const d = document.createElement('div');
-    d.textContent = s || '';
-    return d.innerHTML;
-}
+function escapeHtml(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
 function dateLocale() { return t('date_locale'); }
 
-// ---- Service Worker ----
-if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.register('./sw.js').catch(() => {});
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js').catch(function () {});
+
+// ---- Blokada orientacji ----
+if (screen.orientation && screen.orientation.lock) {
+    screen.orientation.lock('portrait').catch(function () {});
 }
 
 // ========================================
 // Ustawienia
 // ========================================
-
 function initSettings() {
-    const toggleBtn = document.getElementById('settingsToggleBtn');
-    const overlay = document.getElementById('settingsOverlay');
-    const closeBtn = document.getElementById('settingsCloseBtn');
-    const langSwitcher = document.getElementById('langSwitcher');
-    if (!toggleBtn || !overlay) return;
+    var btn = document.getElementById('settingsToggleBtn');
+    var overlay = document.getElementById('settingsOverlay');
+    var closeBtn = document.getElementById('settingsCloseBtn');
+    var langSw = document.getElementById('langSwitcher');
+    if (!btn || !overlay) return;
 
-    // Tłumaczenia panelu
     document.getElementById('settingsTitle').textContent = t('settings_title');
     document.getElementById('settingsThemeLabel').textContent = t('settings_theme');
     document.getElementById('settingsLangLabel').textContent = t('settings_language');
 
-    // Otwórz / zamknij
-    function openSettings() { overlay.classList.add('open'); }
-    function closeSettings() { overlay.classList.remove('open'); }
+    function open() { overlay.classList.add('open'); }
+    function close() { overlay.classList.remove('open'); }
+    btn.addEventListener('click', open);
+    closeBtn.addEventListener('click', close);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && overlay.classList.contains('open')) close(); });
 
-    toggleBtn.addEventListener('click', openSettings);
-    closeBtn.addEventListener('click', closeSettings);
-    overlay.addEventListener('click', function (e) {
-        if (e.target === overlay) closeSettings();
-    });
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape' && overlay.classList.contains('open')) closeSettings();
-    });
+    var bL = document.getElementById('themeBtnLight'), bD = document.getElementById('themeBtnDark');
+    function updTh() { var a = getActiveTheme(); bL.classList.toggle('active', a === 'light'); bD.classList.toggle('active', a === 'dark'); }
+    bL.addEventListener('click', function () { applyTheme('light'); updTh(); });
+    bD.addEventListener('click', function () { applyTheme('dark'); updTh(); });
+    updTh();
 
-    // ---- Motyw ----
-    var btnLight = document.getElementById('themeBtnLight');
-    var btnDark = document.getElementById('themeBtnDark');
-
-    function updateThemeButtons() {
-        var active = getActiveTheme();
-        btnLight.classList.toggle('active', active === 'light');
-        btnDark.classList.toggle('active', active === 'dark');
-    }
-
-    btnLight.addEventListener('click', function () {
-        applyTheme('light');
-        updateThemeButtons();
-    });
-    btnDark.addEventListener('click', function () {
-        applyTheme('dark');
-        updateThemeButtons();
-    });
-    updateThemeButtons();
-
-    // ---- Język ----
-    var activeLang = getActiveLanguage();
-    langSwitcher.innerHTML = '';
+    var aLang = getActiveLanguage();
+    langSw.innerHTML = '';
     CONFIG.AVAILABLE_LANGUAGES.forEach(function (code) {
-        var lang = TRANSLATIONS[code];
-        if (!lang) return;
-        var btn = document.createElement('button');
-        btn.className = 'lang-btn';
-        if (code === activeLang) btn.classList.add('active');
-        btn.innerHTML = '<span class="lang-btn-flag">' + lang.language_flag + '</span>';
-        btn.title = lang.language_name;
-        btn.addEventListener('click', function () {
-            if (code !== activeLang) setLanguage(code);
-        });
-        langSwitcher.appendChild(btn);
+        var lang = TRANSLATIONS[code]; if (!lang) return;
+        var b = document.createElement('button'); b.className = 'lang-btn';
+        if (code === aLang) b.classList.add('active');
+        b.innerHTML = '<span class="lang-btn-flag">' + lang.language_flag + '</span>';
+        b.title = lang.language_name;
+        b.addEventListener('click', function () { if (code !== aLang) setLanguage(code); });
+        langSw.appendChild(b);
     });
 }
 
 // ========================================
-// Inicjalizacja
+// Init
 // ========================================
-
 document.addEventListener('DOMContentLoaded', function () {
     initSettings();
     if (document.getElementById('trainingsBody')) initIndexPage();
@@ -197,870 +97,367 @@ document.addEventListener('DOMContentLoaded', function () {
 // ========================================
 // STRONA GŁÓWNA
 // ========================================
-
 function initIndexPage() {
     var EXDATA = getLocalizedExerciseData();
+    var body = document.getElementById('trainingsBody'), modal = document.getElementById('trainingModal'), form = document.getElementById('trainingForm');
+    var mTitle = document.getElementById('trainingModalTitle'), nIn = document.getElementById('trainingName'), dIn = document.getElementById('trainingDate'), wIn = document.getElementById('trainingWeight');
+    var empty = document.getElementById('emptyMessage'), fN = document.getElementById('filterName'), fDF = document.getElementById('filterDateFrom'), fDT = document.getElementById('filterDateTo');
+    var fBar = document.getElementById('filtersBar'), tFBtn = document.getElementById('toggleFiltersBtn'), selAll = document.getElementById('selectAllCheckbox');
+    var selBar = document.getElementById('selectionToolbar'), selCnt = document.getElementById('selectionCount');
+    var pdfBtn = document.getElementById('downloadPdfBtn'), editBtn = document.getElementById('editSelectedBtn'), delBtn = document.getElementById('deleteSelectedBtn'), clrBtn = document.getElementById('clearSelectionBtn');
+    var dBar = document.getElementById('dataBar'), tDBtn = document.getElementById('toggleDataBtn'), iModal = document.getElementById('importModal'), iDet = document.getElementById('importDetail'), iFile = document.getElementById('importFileInput');
+    var editingId = null, pendingImport = null, sortCol = CONFIG.DEFAULT_SORT_COLUMN, sortDir = CONFIG.DEFAULT_SORT_DIRECTION;
+    var sel = new Set();
 
-    var trainingsBody = document.getElementById('trainingsBody');
-    var trainingModal = document.getElementById('trainingModal');
-    var trainingForm = document.getElementById('trainingForm');
-    var trainingModalTitle = document.getElementById('trainingModalTitle');
-    var nameInput = document.getElementById('trainingName');
-    var dateInput = document.getElementById('trainingDate');
-    var emptyMsg = document.getElementById('emptyMessage');
-    var filterName = document.getElementById('filterName');
-    var filterDateFrom = document.getElementById('filterDateFrom');
-    var filterDateTo = document.getElementById('filterDateTo');
-    var filtersBar = document.getElementById('filtersBar');
-    var toggleFiltersBtn = document.getElementById('toggleFiltersBtn');
-    var selectAllCb = document.getElementById('selectAllCheckbox');
-    var selToolbar = document.getElementById('selectionToolbar');
-    var selCountEl = document.getElementById('selectionCount');
-    var pdfBtn = document.getElementById('downloadPdfBtn');
-    var editBtn = document.getElementById('editSelectedBtn');
-    var delBtn = document.getElementById('deleteSelectedBtn');
-    var clrSelBtn = document.getElementById('clearSelectionBtn');
-    var dataBar = document.getElementById('dataBar');
-    var toggleDataBtn = document.getElementById('toggleDataBtn');
-    var importModal = document.getElementById('importModal');
-    var importDetail = document.getElementById('importDetail');
-    var importFileInput = document.getElementById('importFileInput');
-
-    var editingId = null;
-    var pendingImport = null;
-    var sortCol = CONFIG.DEFAULT_SORT_COLUMN;
-    var sortDir = CONFIG.DEFAULT_SORT_DIRECTION;
-    var selected = new Set();
-
-    // ---- Tłumaczenia ----
-    document.title = t('app_title');
-    document.querySelector('h1').textContent = t('app_title_emoji');
+    // Tłumaczenia
+    document.title = t('app_title'); document.querySelector('h1').textContent = t('app_title_emoji');
     document.getElementById('addTrainingBtn').textContent = t('btn_add_training');
-    editBtn.innerHTML = t('btn_edit');
-    pdfBtn.innerHTML = t('btn_pdf');
-    delBtn.innerHTML = t('btn_delete');
-    toggleFiltersBtn.textContent = t('btn_filters');
-    toggleDataBtn.textContent = t('btn_data');
+    editBtn.innerHTML = t('btn_edit'); pdfBtn.innerHTML = t('btn_pdf'); delBtn.innerHTML = t('btn_delete');
+    tFBtn.textContent = t('btn_filters'); tDBtn.textContent = t('btn_data');
     document.querySelector('.data-bar-info').textContent = t('data_bar_info');
     document.getElementById('exportJsonBtn').textContent = t('btn_export_json');
     document.getElementById('importJsonBtn').textContent = t('btn_import_json');
-    document.querySelector('#filtersBar label[for="filterName"]').textContent = t('filter_name');
-    filterName.placeholder = t('filter_name_placeholder');
+    document.querySelector('#filtersBar label[for="filterName"]').textContent = t('filter_name'); fN.placeholder = t('filter_name_placeholder');
     document.querySelector('#filtersBar label[for="filterDateFrom"]').textContent = t('filter_from');
     document.querySelector('#filtersBar label[for="filterDateTo"]').textContent = t('filter_to');
     document.getElementById('clearFiltersBtn').textContent = t('btn_clear_filters');
-    clrSelBtn.textContent = t('btn_clear_selection');
-    selectAllCb.title = t('select_all_title');
+    clrBtn.textContent = t('btn_clear_selection'); selAll.title = t('select_all_title');
     document.getElementById('cancelTrainingBtn').textContent = t('btn_cancel');
     document.querySelector('#trainingForm button[type="submit"]').textContent = t('btn_save');
-    document.querySelector('#trainingForm label[for="trainingName"]').textContent = t('training_name_label');
-    nameInput.placeholder = t('training_name_placeholder');
+    document.querySelector('#trainingForm label[for="trainingName"]').textContent = t('training_name_label'); nIn.placeholder = t('training_name_placeholder');
     document.querySelector('#trainingForm label[for="trainingDate"]').textContent = t('training_date_label');
+    document.querySelector('#trainingForm label[for="trainingWeight"]').textContent = t('training_weight_label'); wIn.placeholder = t('training_weight_placeholder');
     document.querySelector('#importModal h2').textContent = t('import_title');
     document.querySelector('.import-warning').textContent = t('import_warning');
     document.getElementById('importCancelBtn').textContent = t('btn_cancel');
     document.getElementById('importMergeBtn').textContent = t('btn_merge');
     document.getElementById('importReplaceBtn').textContent = t('btn_replace');
-    emptyMsg.textContent = t('empty_no_trainings');
+    empty.textContent = t('empty_no_trainings');
 
-    var thCells = document.querySelectorAll('#trainingsTable thead th');
-    thCells[1].innerHTML = t('th_name') + ' <span class="sort-icon" id="sortIconName"></span>';
-    thCells[2].innerHTML = t('th_date') + ' <span class="sort-icon" id="sortIconDate"></span>';
-    thCells[3].innerHTML = t('th_exercises') + ' <span class="sort-icon" id="sortIconExercises"></span>';
-    thCells[4].innerHTML = t('th_rating') + ' <span class="sort-icon" id="sortIconRating"></span>';
+    var ths = document.querySelectorAll('#trainingsTable thead th');
+    ths[1].innerHTML = t('th_name') + ' <span class="sort-icon" id="sortIconName"></span>';
+    ths[2].innerHTML = t('th_date') + ' <span class="sort-icon" id="sortIconDate"></span>';
+    ths[3].innerHTML = t('th_weight') + ' <span class="sort-icon" id="sortIconWeight"></span>';
+    ths[4].innerHTML = t('th_exercises') + ' <span class="sort-icon" id="sortIconExercises"></span>';
+    ths[5].innerHTML = t('th_rating') + ' <span class="sort-icon" id="sortIconRating"></span>';
+    document.querySelectorAll('.date-helper-btn').forEach(function (b) { b.textContent = tDateHelper(parseInt(b.dataset.offset)); });
 
-    document.querySelectorAll('.date-helper-btn').forEach(function (btn) {
-        btn.textContent = tDateHelper(parseInt(btn.dataset.offset));
-    });
+    tFBtn.addEventListener('click', function () { fBar.classList.toggle('collapsed'); tFBtn.classList.toggle('active'); });
+    tDBtn.addEventListener('click', function () { dBar.classList.toggle('collapsed'); tDBtn.classList.toggle('active'); });
+    document.querySelectorAll('.date-helper-btn').forEach(function (b) { b.addEventListener('click', function () { var d = new Date(); d.setDate(d.getDate() + parseInt(b.dataset.offset)); dIn.value = d.toISOString().split('T')[0]; document.querySelectorAll('.date-helper-btn').forEach(function (x) { x.classList.remove('active'); }); b.classList.add('active'); }); });
+    dIn.addEventListener('change', udh);
+    function udh() { var v = dIn.value; document.querySelectorAll('.date-helper-btn').forEach(function (b) { var d = new Date(); d.setDate(d.getDate() + parseInt(b.dataset.offset)); b.classList.toggle('active', v === d.toISOString().split('T')[0]); }); }
 
-    // ---- Panele ----
-    toggleFiltersBtn.addEventListener('click', function () {
-        filtersBar.classList.toggle('collapsed');
-        toggleFiltersBtn.classList.toggle('active');
-    });
-    toggleDataBtn.addEventListener('click', function () {
-        dataBar.classList.toggle('collapsed');
-        toggleDataBtn.classList.toggle('active');
-    });
+    document.getElementById('exportJsonBtn').addEventListener('click', function () { var b = new Blob([exportData()], { type: 'application/json' }); var u = URL.createObjectURL(b); var a = document.createElement('a'); a.href = u; a.download = t('export_filename_prefix') + '_' + new Date().toISOString().split('T')[0] + '.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(u); });
+    document.getElementById('importJsonBtn').addEventListener('click', function () { iFile.click(); });
+    iFile.addEventListener('change', function (e) { var f = e.target.files[0]; if (!f) return; var r = new FileReader(); r.onload = function (ev) { try { var p = JSON.parse(ev.target.result); if (!p.version || !Array.isArray(p.trainings)) { alert(t('import_invalid_format')); return; } pendingImport = p.trainings; iDet.textContent = t('import_detail', { fileCount: p.trainings.length, currentCount: getTrainings().length }); iModal.classList.add('active'); } catch (x) { alert(t('import_read_error')); } }; r.readAsText(f); iFile.value = ''; });
+    document.getElementById('importCancelBtn').addEventListener('click', function () { iModal.classList.remove('active'); pendingImport = null; });
+    document.getElementById('importMergeBtn').addEventListener('click', function () { if (!pendingImport) return; importData(pendingImport, 'merge'); iModal.classList.remove('active'); pendingImport = null; sel.clear(); render(); });
+    document.getElementById('importReplaceBtn').addEventListener('click', function () { if (!pendingImport) return; importData(pendingImport, 'replace'); iModal.classList.remove('active'); pendingImport = null; sel.clear(); render(); });
+    iModal.addEventListener('click', function (e) { if (e.target === iModal) { iModal.classList.remove('active'); pendingImport = null; } });
 
-    // ---- Pomocniki daty ----
-    document.querySelectorAll('.date-helper-btn').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-            var d = new Date();
-            d.setDate(d.getDate() + parseInt(btn.dataset.offset));
-            dateInput.value = d.toISOString().split('T')[0];
-            document.querySelectorAll('.date-helper-btn').forEach(function (b) { b.classList.remove('active'); });
-            btn.classList.add('active');
-        });
-    });
-    dateInput.addEventListener('change', highlightDateHelper);
-
-    function highlightDateHelper() {
-        var val = dateInput.value;
-        document.querySelectorAll('.date-helper-btn').forEach(function (btn) {
-            var d = new Date();
-            d.setDate(d.getDate() + parseInt(btn.dataset.offset));
-            btn.classList.toggle('active', val === d.toISOString().split('T')[0]);
-        });
-    }
-
-    // ---- Eksport JSON ----
-    document.getElementById('exportJsonBtn').addEventListener('click', function () {
-        var blob = new Blob([exportData()], { type: 'application/json' });
-        var url = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = url;
-        a.download = t('export_filename_prefix') + '_' + new Date().toISOString().split('T')[0] + '.json';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    });
-
-    // ---- Import JSON ----
-    document.getElementById('importJsonBtn').addEventListener('click', function () { importFileInput.click(); });
-    importFileInput.addEventListener('change', function (e) {
-        var file = e.target.files[0];
-        if (!file) return;
-        var reader = new FileReader();
-        reader.onload = function (ev) {
-            try {
-                var parsed = JSON.parse(ev.target.result);
-                if (!parsed.version || !Array.isArray(parsed.trainings)) {
-                    alert(t('import_invalid_format'));
-                    return;
-                }
-                pendingImport = parsed.trainings;
-                importDetail.textContent = t('import_detail', {
-                    fileCount: parsed.trainings.length,
-                    currentCount: getTrainings().length
-                });
-                importModal.classList.add('active');
-            } catch (err) {
-                alert(t('import_read_error'));
-            }
-        };
-        reader.readAsText(file);
-        importFileInput.value = '';
-    });
-    document.getElementById('importCancelBtn').addEventListener('click', function () {
-        importModal.classList.remove('active');
-        pendingImport = null;
-    });
-    document.getElementById('importMergeBtn').addEventListener('click', function () {
-        if (!pendingImport) return;
-        importData(pendingImport, 'merge');
-        importModal.classList.remove('active');
-        pendingImport = null;
-        selected.clear();
-        renderTrainings();
-    });
-    document.getElementById('importReplaceBtn').addEventListener('click', function () {
-        if (!pendingImport) return;
-        importData(pendingImport, 'replace');
-        importModal.classList.remove('active');
-        pendingImport = null;
-        selected.clear();
-        renderTrainings();
-    });
-    importModal.addEventListener('click', function (e) {
-        if (e.target === importModal) {
-            importModal.classList.remove('active');
-            pendingImport = null;
-        }
-    });
-
-    // ---- Filtrowanie i sortowanie ----
-    function getFiltered() {
-        var trainings = getTrainings();
-        var q = filterName.value.trim().toLowerCase();
-        if (q) trainings = trainings.filter(function (x) { return x.name.toLowerCase().includes(q); });
-        if (filterDateFrom.value) trainings = trainings.filter(function (x) { return x.date >= filterDateFrom.value; });
-        if (filterDateTo.value) trainings = trainings.filter(function (x) { return x.date <= filterDateTo.value; });
-        trainings.sort(function (a, b) {
+    function filtered() {
+        var ts = getTrainings(); var q = fN.value.trim().toLowerCase();
+        if (q) ts = ts.filter(function (x) { return x.name.toLowerCase().includes(q); });
+        if (fDF.value) ts = ts.filter(function (x) { return x.date >= fDF.value; });
+        if (fDT.value) ts = ts.filter(function (x) { return x.date <= fDT.value; });
+        ts.sort(function (a, b) {
             var va, vb;
             if (sortCol === 'name') { va = a.name.toLowerCase(); vb = b.name.toLowerCase(); }
             else if (sortCol === 'date') { va = a.date; vb = b.date; }
+            else if (sortCol === 'weight') { va = a.bodyWeight || 0; vb = b.bodyWeight || 0; }
             else if (sortCol === 'exercises') { va = a.exercises.length; vb = b.exercises.length; }
             else { va = getAverageRating(a); vb = getAverageRating(b); }
-            if (va < vb) return sortDir === 'asc' ? -1 : 1;
-            if (va > vb) return sortDir === 'asc' ? 1 : -1;
-            return 0;
+            return va < vb ? (sortDir === 'asc' ? -1 : 1) : va > vb ? (sortDir === 'asc' ? 1 : -1) : 0;
         });
-        return trainings;
+        return ts;
     }
-
-    function updateSortIcons() {
-        ['sortIconName', 'sortIconDate', 'sortIconExercises', 'sortIconRating'].forEach(function (id) {
-            document.getElementById(id).textContent = '';
-        });
-        var map = { name: 'sortIconName', date: 'sortIconDate', exercises: 'sortIconExercises', rating: 'sortIconRating' };
+    function updSort() {
+        ['sortIconName','sortIconDate','sortIconWeight','sortIconExercises','sortIconRating'].forEach(function (id) { document.getElementById(id).textContent = ''; });
+        var map = { name:'sortIconName', date:'sortIconDate', weight:'sortIconWeight', exercises:'sortIconExercises', rating:'sortIconRating' };
         if (map[sortCol]) document.getElementById(map[sortCol]).textContent = sortDir === 'asc' ? '▲' : '▼';
     }
-
-    function formatDate(dateStr) {
-        var d = new Date(dateStr + 'T00:00:00');
-        if (window.innerWidth <= 480) return d.toLocaleDateString(dateLocale(), { month: 'short', day: 'numeric' });
-        return d.toLocaleDateString(dateLocale(), { year: 'numeric', month: 'short', day: 'numeric' });
+    function fmtD(ds) { var d = new Date(ds + 'T00:00:00'); return window.innerWidth <= 480 ? d.toLocaleDateString(dateLocale(), { month:'short', day:'numeric' }) : d.toLocaleDateString(dateLocale(), { year:'numeric', month:'short', day:'numeric' }); }
+    function updSel() {
+        var c = sel.size, has = getTrainings().length > 0;
+        pdfBtn.style.display = has ? '' : 'none'; pdfBtn.disabled = !c; pdfBtn.title = c ? t('tooltip_pdf_enabled', { count: c }) : t('tooltip_pdf_disabled');
+        editBtn.style.display = has ? '' : 'none'; editBtn.disabled = c !== 1;
+        delBtn.style.display = has ? '' : 'none'; delBtn.disabled = !c;
+        if (c) { selBar.classList.add('visible'); selCnt.textContent = t('selection_count', { count: c }); } else selBar.classList.remove('visible');
+        var vis = filtered(); var allS = vis.length && vis.every(function (x) { return sel.has(x.id); }); var someS = vis.some(function (x) { return sel.has(x.id); });
+        selAll.checked = allS; selAll.indeterminate = someS && !allS;
+        body.querySelectorAll('tr').forEach(function (r) { r.classList.toggle('selected', r.dataset.id && sel.has(r.dataset.id)); });
     }
-
-    // ---- Zaznaczenie ----
-    function updateSelectionUI() {
-        var count = selected.size;
-        var hasData = getTrainings().length > 0;
-
-        pdfBtn.style.display = hasData ? '' : 'none';
-        pdfBtn.disabled = count === 0;
-        pdfBtn.title = count > 0 ? t('tooltip_pdf_enabled', { count: count }) : t('tooltip_pdf_disabled');
-        editBtn.style.display = hasData ? '' : 'none';
-        editBtn.disabled = count !== 1;
-        editBtn.title = count === 1 ? t('tooltip_edit_enabled') : t('tooltip_edit_disabled');
-        delBtn.style.display = hasData ? '' : 'none';
-        delBtn.disabled = count === 0;
-        delBtn.title = count > 0 ? t('tooltip_delete_enabled', { count: count }) : t('tooltip_delete_disabled');
-
-        if (count > 0) {
-            selToolbar.classList.add('visible');
-            selCountEl.textContent = t('selection_count', { count: count });
-        } else {
-            selToolbar.classList.remove('visible');
-        }
-
-        var visible = getFiltered();
-        var allSel = visible.length > 0 && visible.every(function (x) { return selected.has(x.id); });
-        var someSel = visible.some(function (x) { return selected.has(x.id); });
-        selectAllCb.checked = allSel;
-        selectAllCb.indeterminate = someSel && !allSel;
-
-        document.querySelectorAll('#trainingsBody tr').forEach(function (row) {
-            row.classList.toggle('selected', row.dataset.id && selected.has(row.dataset.id));
+    function render() {
+        var ts = filtered(), all = getTrainings(); body.innerHTML = ''; tFBtn.style.display = all.length ? '' : 'none';
+        if (!ts.length) { empty.style.display = 'block'; empty.textContent = all.length ? t('empty_no_filter_match') : t('empty_no_trainings'); document.getElementById('trainingsTable').style.display = 'none'; updSel(); return; }
+        empty.style.display = 'none'; document.getElementById('trainingsTable').style.display = 'table'; updSort();
+        ts.forEach(function (tr) {
+            var row = document.createElement('tr'); row.dataset.id = tr.id;
+            var wt = tr.bodyWeight ? tr.bodyWeight + ' ' + t('weight_unit') : '-';
+            row.innerHTML = '<td class="td-checkbox"><input type="checkbox" class="row-checkbox" data-id="' + tr.id + '" ' + (sel.has(tr.id) ? 'checked' : '') + '></td>' +
+                '<td class="clickable" data-id="' + tr.id + '">' + escapeHtml(tr.name) + '</td>' +
+                '<td class="clickable" data-id="' + tr.id + '">' + fmtD(tr.date) + '</td>' +
+                '<td class="clickable td-weight" data-id="' + tr.id + '">' + wt + '</td>' +
+                '<td class="clickable" data-id="' + tr.id + '">' + tr.exercises.length + '</td>' +
+                '<td class="clickable td-rating" data-id="' + tr.id + '">' + renderStarsReadonly(getAverageRating(tr)) + '</td>';
+            body.appendChild(row);
         });
+        updSel();
     }
 
-    // ---- Renderowanie ----
-    function renderTrainings() {
-        var trainings = getFiltered();
-        var all = getTrainings();
-        trainingsBody.innerHTML = '';
-        toggleFiltersBtn.style.display = all.length === 0 ? 'none' : '';
-
-        if (trainings.length === 0) {
-            emptyMsg.style.display = 'block';
-            emptyMsg.textContent = all.length === 0 ? t('empty_no_trainings') : t('empty_no_filter_match');
-            document.getElementById('trainingsTable').style.display = 'none';
-            updateSelectionUI();
-            return;
-        }
-
-        emptyMsg.style.display = 'none';
-        document.getElementById('trainingsTable').style.display = 'table';
-        updateSortIcons();
-
-        trainings.forEach(function (training) {
-            var row = document.createElement('tr');
-            row.dataset.id = training.id;
-            var checked = selected.has(training.id) ? 'checked' : '';
-            var avg = getAverageRating(training);
-            row.innerHTML =
-                '<td class="td-checkbox"><input type="checkbox" class="row-checkbox" data-id="' + training.id + '" ' + checked + '></td>' +
-                '<td class="clickable" data-id="' + training.id + '">' + escapeHtml(training.name) + '</td>' +
-                '<td class="clickable" data-id="' + training.id + '">' + formatDate(training.date) + '</td>' +
-                '<td class="clickable" data-id="' + training.id + '">' + training.exercises.length + '</td>' +
-                '<td class="clickable td-rating" data-id="' + training.id + '">' + renderStarsReadonly(avg) + '</td>';
-            trainingsBody.appendChild(row);
-        });
-        updateSelectionUI();
+    function openM(tr) {
+        if (tr) { mTitle.textContent = t('modal_edit_training'); nIn.value = tr.name; dIn.value = tr.date; wIn.value = tr.bodyWeight || ''; editingId = tr.id; }
+        else { mTitle.textContent = t('modal_add_training'); nIn.value = ''; dIn.value = new Date().toISOString().split('T')[0]; wIn.value = ''; editingId = null; }
+        udh(); modal.classList.add('active'); nIn.focus();
     }
+    function closeM() { modal.classList.remove('active'); editingId = null; }
 
-    // ---- Modal ----
-    function openModal(training) {
-        if (training) {
-            trainingModalTitle.textContent = t('modal_edit_training');
-            nameInput.value = training.name;
-            dateInput.value = training.date;
-            editingId = training.id;
-        } else {
-            trainingModalTitle.textContent = t('modal_add_training');
-            nameInput.value = '';
-            dateInput.value = new Date().toISOString().split('T')[0];
-            editingId = null;
-        }
-        highlightDateHelper();
-        trainingModal.classList.add('active');
-        nameInput.focus();
-    }
-
-    function closeModal() {
-        trainingModal.classList.remove('active');
-        editingId = null;
-    }
-
-    // ---- PDF ----
     function exportPDF(ids) {
         var trainings = ids.map(function (id) { return getTrainings().find(function (x) { return x.id === id; }); }).filter(Boolean);
         if (!trainings.length) return;
         trainings.sort(function (a, b) { return new Date(a.date) - new Date(b.date); });
-
-        var jsPDF = window.jspdf.jsPDF;
-        var doc = new jsPDF(CONFIG.PDF_ORIENTATION);
-        var pw = doc.internal.pageSize.getWidth();
-
-        trainings.forEach(function (training, tIdx) {
-            if (tIdx > 0) doc.addPage();
-            var y = 18;
-
-            doc.setFontSize(22);
-            doc.setFont('helvetica', 'bold');
-            doc.setTextColor(30);
-            doc.text(training.name, pw / 2, y, { align: 'center' });
+        var jsPDF = window.jspdf.jsPDF; var doc = new jsPDF(CONFIG.PDF_ORIENTATION); var pw = doc.internal.pageSize.getWidth();
+        trainings.forEach(function (tr, ti) {
+            if (ti) doc.addPage(); var y = 18;
+            doc.setFontSize(22); doc.setFont('helvetica', 'bold'); doc.setTextColor(30); doc.text(tr.name, pw / 2, y, { align: 'center' }); y += 8;
+            doc.setFontSize(12); doc.setFont('helvetica', 'normal'); doc.setTextColor(100);
+            doc.text(new Date(tr.date + 'T00:00:00').toLocaleDateString(dateLocale(), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }), pw / 2, y, { align: 'center' }); y += 6;
+            doc.setDrawColor(200); doc.setLineWidth(0.5); doc.line(14, y, pw - 14, y); y += 8;
+            doc.setTextColor(60); doc.setFontSize(11);
+            doc.text(t('pdf_total_exercises') + ': ' + tr.exercises.length, 14, y);
+            var gt = 0; tr.exercises.forEach(function (e) { gt += getTotalReps(e); });
+            doc.text(t('pdf_total_reps') + ': ' + gt, 100, y);
+            if (tr.bodyWeight) doc.text(t('pdf_body_weight') + ': ' + tr.bodyWeight + ' ' + t('weight_unit'), 190, y);
             y += 8;
-
-            var dateStr = new Date(training.date + 'T00:00:00').toLocaleDateString(dateLocale(), {
-                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-            });
-            doc.setFontSize(12);
-            doc.setFont('helvetica', 'normal');
-            doc.setTextColor(100);
-            doc.text(dateStr, pw / 2, y, { align: 'center' });
-            y += 6;
-
-            doc.setDrawColor(200);
-            doc.setLineWidth(0.5);
-            doc.line(14, y, pw - 14, y);
-            y += 8;
-
-            doc.setTextColor(60);
-            doc.setFontSize(11);
-            doc.text(t('pdf_total_exercises') + ': ' + training.exercises.length, 14, y);
-            var grandTotal = 0;
-            training.exercises.forEach(function (ex) { grandTotal += getTotalReps(ex); });
-            doc.text(t('pdf_total_reps') + ': ' + grandTotal, 100, y);
-            y += 8;
-
-            if (training.exercises.length === 0) {
-                doc.setFontSize(12);
-                doc.setTextColor(150);
-                doc.text(t('pdf_no_exercises'), pw / 2, y + 10, { align: 'center' });
-            } else {
-                var grouped = {};
-                training.exercises.forEach(function (ex) {
-                    var type = ex.type || t('pdf_uncategorized');
-                    if (!grouped[type]) grouped[type] = [];
-                    grouped[type].push(ex);
-                });
-
-                Object.keys(grouped).forEach(function (type) {
-                    doc.setFontSize(13);
-                    doc.setFont('helvetica', 'bold');
-                    doc.setTextColor(40);
-                    doc.text(type, 14, y);
-                    y += 2;
-
-                    var tableRows = grouped[type].map(function (ex) {
-                        var s = ex.series || [];
-                        var total = getTotalReps(ex);
-                        return [
-                            ex.name || '-', ex.load || '-',
-                            s[0] != null ? String(s[0]) : '-', s[1] != null ? String(s[1]) : '-',
-                            s[2] != null ? String(s[2]) : '-', s[3] != null ? String(s[3]) : '-',
-                            s[4] != null ? String(s[4]) : '-', s[5] != null ? String(s[5]) : '-',
-                            total > 0 ? String(total) : '-'
-                        ];
-                    });
-
-                    doc.autoTable({
-                        startY: y,
-                        head: [[t('pdf_header_exercise'), t('pdf_header_load'), 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', t('pdf_header_total')]],
-                        body: tableRows,
-                        theme: 'grid',
-                        margin: { left: 14, right: 14 },
-                        headStyles: {
-                            fillColor: CONFIG.PDF_HEADER_COLOR,
-                            textColor: 255,
-                            fontStyle: 'bold',
-                            fontSize: 10,
-                            halign: 'center'
-                        },
-                        columnStyles: {
-                            0: { cellWidth: 'auto', halign: 'left' },
-                            1: { cellWidth: 28, halign: 'center' },
-                            2: { cellWidth: 14, halign: 'center' },
-                            3: { cellWidth: 14, halign: 'center' },
-                            4: { cellWidth: 14, halign: 'center' },
-                            5: { cellWidth: 14, halign: 'center' },
-                            6: { cellWidth: 14, halign: 'center' },
-                            7: { cellWidth: 14, halign: 'center' },
-                            8: { cellWidth: 18, halign: 'center', fontStyle: 'bold' }
-                        },
-                        bodyStyles: { fontSize: 10, textColor: 50 },
-                        alternateRowStyles: { fillColor: CONFIG.PDF_ALT_ROW_COLOR }
-                    });
+            if (!tr.exercises.length) { doc.setFontSize(12); doc.setTextColor(150); doc.text(t('pdf_no_exercises'), pw / 2, y + 10, { align: 'center' }); }
+            else {
+                var grp = {}; tr.exercises.forEach(function (e) { var tp = e.type || t('pdf_uncategorized'); if (!grp[tp]) grp[tp] = []; grp[tp].push(e); });
+                Object.keys(grp).forEach(function (tp) {
+                    doc.setFontSize(13); doc.setFont('helvetica', 'bold'); doc.setTextColor(40); doc.text(tp, 14, y); y += 2;
+                    var rows = grp[tp].map(function (e) { var s = e.series || []; var tot = getTotalReps(e); return [e.name || '-', e.load || '-', s[0] != null ? String(s[0]) : '-', s[1] != null ? String(s[1]) : '-', s[2] != null ? String(s[2]) : '-', s[3] != null ? String(s[3]) : '-', s[4] != null ? String(s[4]) : '-', s[5] != null ? String(s[5]) : '-', tot > 0 ? String(tot) : '-']; });
+                    doc.autoTable({ startY: y, head: [[t('pdf_header_exercise'), t('pdf_header_load'), 'S1', 'S2', 'S3', 'S4', 'S5', 'S6', t('pdf_header_total')]], body: rows, theme: 'grid', margin: { left: 14, right: 14 }, headStyles: { fillColor: CONFIG.PDF_HEADER_COLOR, textColor: 255, fontStyle: 'bold', fontSize: 10, halign: 'center' }, columnStyles: { 0: { cellWidth: 'auto', halign: 'left' }, 1: { cellWidth: 28, halign: 'center' }, 2: { cellWidth: 14, halign: 'center' }, 3: { cellWidth: 14, halign: 'center' }, 4: { cellWidth: 14, halign: 'center' }, 5: { cellWidth: 14, halign: 'center' }, 6: { cellWidth: 14, halign: 'center' }, 7: { cellWidth: 14, halign: 'center' }, 8: { cellWidth: 18, halign: 'center', fontStyle: 'bold' } }, bodyStyles: { fontSize: 10, textColor: 50 }, alternateRowStyles: { fillColor: CONFIG.PDF_ALT_ROW_COLOR } });
                     y = doc.lastAutoTable.finalY + 10;
                 });
             }
         });
-
-        var totalPages = doc.internal.getNumberOfPages();
-        for (var p = 1; p <= totalPages; p++) {
-            doc.setPage(p);
-            doc.setFontSize(8);
-            doc.setTextColor(180);
-            doc.text(
-                t('pdf_footer', { date: new Date().toLocaleDateString(dateLocale()), page: p, total: totalPages }),
-                pw / 2,
-                doc.internal.pageSize.getHeight() - 10,
-                { align: 'center' }
-            );
-        }
-
-        var filename;
-        if (trainings.length === 1) {
-            var safeName = trainings[0].name.replace(/[^a-z0-9ąćęłńóśźż]/gi, '_').toLowerCase();
-            filename = safeName + '_' + trainings[0].date + '.pdf';
-        } else {
-            filename = t('pdf_filename_prefix') + '_' + trainings.length + '_' + t('pdf_filename_suffix') + '.pdf';
-        }
-        doc.save(filename);
+        var tp = doc.internal.getNumberOfPages();
+        for (var p = 1; p <= tp; p++) { doc.setPage(p); doc.setFontSize(8); doc.setTextColor(180); doc.text(t('pdf_footer', { date: new Date().toLocaleDateString(dateLocale()), page: p, total: tp }), pw / 2, doc.internal.pageSize.getHeight() - 10, { align: 'center' }); }
+        var fn; if (trainings.length === 1) fn = trainings[0].name.replace(/[^a-z0-9ąćęłńóśźż]/gi, '_').toLowerCase() + '_' + trainings[0].date + '.pdf'; else fn = t('pdf_filename_prefix') + '_' + trainings.length + '_' + t('pdf_filename_suffix') + '.pdf';
+        doc.save(fn);
     }
 
-    // ---- Zdarzenia ----
-    document.getElementById('addTrainingBtn').addEventListener('click', function () { openModal(null); });
-    document.getElementById('cancelTrainingBtn').addEventListener('click', closeModal);
-    trainingModal.addEventListener('click', function (e) { if (e.target === trainingModal) closeModal(); });
-
-    trainingForm.addEventListener('submit', function (e) {
-        e.preventDefault();
-        var name = nameInput.value.trim();
-        var date = dateInput.value;
+    document.getElementById('addTrainingBtn').addEventListener('click', function () { openM(null); });
+    document.getElementById('cancelTrainingBtn').addEventListener('click', closeM);
+    modal.addEventListener('click', function (e) { if (e.target === modal) closeM(); });
+    form.addEventListener('submit', function (e) {
+        e.preventDefault(); var name = nIn.value.trim(), date = dIn.value, weight = wIn.value ? parseFloat(wIn.value) : null;
         if (!name || !date) return;
-        if (editingId) {
-            updateTraining(editingId, { name: name, date: date });
-            closeModal();
-            renderTrainings();
-        } else {
-            var training = addTraining(name, date);
-            closeModal();
-            window.location.href = 'training.html?id=' + training.id;
-        }
+        if (editingId) { updateTraining(editingId, { name: name, date: date, bodyWeight: weight }); closeM(); render(); }
+        else { var tr = addTraining(name, date, weight); closeM(); window.location.href = 'training.html?id=' + tr.id; }
     });
-
-    trainingsBody.addEventListener('click', function (e) {
-        var el = e.target.classList.contains('clickable') ? e.target : e.target.closest('.clickable');
-        if (el && el.dataset.id) window.location.href = 'training.html?id=' + el.dataset.id;
-    });
-
-    trainingsBody.addEventListener('change', function (e) {
-        if (!e.target.classList.contains('row-checkbox')) return;
-        var id = e.target.dataset.id;
-        if (e.target.checked) selected.add(id); else selected.delete(id);
-        updateSelectionUI();
-    });
-
-    selectAllCb.addEventListener('change', function () {
-        var visible = getFiltered();
-        if (selectAllCb.checked) visible.forEach(function (x) { selected.add(x.id); });
-        else visible.forEach(function (x) { selected.delete(x.id); });
-        renderTrainings();
-    });
-
-    editBtn.addEventListener('click', function () {
-        if (selected.size !== 1) return;
-        var training = getTrainings().find(function (x) { return x.id === Array.from(selected)[0]; });
-        if (training) openModal(training);
-    });
-
-    pdfBtn.addEventListener('click', function () {
-        if (selected.size > 0) exportPDF(Array.from(selected));
-    });
-
-    delBtn.addEventListener('click', function () {
-        if (selected.size === 0) return;
-        var count = selected.size;
-        var msg = count === 1 ? t('confirm_delete_single') : t('confirm_delete_multiple', { count: count });
-        if (!confirm(msg)) return;
-        Array.from(selected).forEach(function (id) { deleteTraining(id); });
-        selected.clear();
-        renderTrainings();
-    });
-
-    clrSelBtn.addEventListener('click', function () { selected.clear(); renderTrainings(); });
-
-    document.querySelectorAll('#trainingsTable th.sortable').forEach(function (th) {
-        th.addEventListener('click', function () {
-            var col = th.dataset.sort;
-            if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc';
-            else { sortCol = col; sortDir = 'asc'; }
-            renderTrainings();
-        });
-    });
-
-    filterName.addEventListener('input', renderTrainings);
-    filterDateFrom.addEventListener('change', renderTrainings);
-    filterDateTo.addEventListener('change', renderTrainings);
-    document.getElementById('clearFiltersBtn').addEventListener('click', function () {
-        filterName.value = '';
-        filterDateFrom.value = '';
-        filterDateTo.value = '';
-        renderTrainings();
-    });
-
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Escape') {
-            closeModal();
-            importModal.classList.remove('active');
-            pendingImport = null;
-        }
-    });
-
-    window.addEventListener('resize', renderTrainings);
-    renderTrainings();
+    body.addEventListener('click', function (e) { var el = e.target.classList.contains('clickable') ? e.target : e.target.closest('.clickable'); if (el && el.dataset.id) window.location.href = 'training.html?id=' + el.dataset.id; });
+    body.addEventListener('change', function (e) { if (!e.target.classList.contains('row-checkbox')) return; if (e.target.checked) sel.add(e.target.dataset.id); else sel.delete(e.target.dataset.id); updSel(); });
+    selAll.addEventListener('change', function () { var v = filtered(); if (selAll.checked) v.forEach(function (x) { sel.add(x.id); }); else v.forEach(function (x) { sel.delete(x.id); }); render(); });
+    editBtn.addEventListener('click', function () { if (sel.size !== 1) return; var tr = getTrainings().find(function (x) { return x.id === Array.from(sel)[0]; }); if (tr) openM(tr); });
+    pdfBtn.addEventListener('click', function () { if (sel.size) exportPDF(Array.from(sel)); });
+    delBtn.addEventListener('click', function () { if (!sel.size) return; var c = sel.size; if (!confirm(c === 1 ? t('confirm_delete_single') : t('confirm_delete_multiple', { count: c }))) return; Array.from(sel).forEach(function (id) { deleteTraining(id); }); sel.clear(); render(); });
+    clrBtn.addEventListener('click', function () { sel.clear(); render(); });
+    document.querySelectorAll('#trainingsTable th.sortable').forEach(function (th) { th.addEventListener('click', function () { var col = th.dataset.sort; if (sortCol === col) sortDir = sortDir === 'asc' ? 'desc' : 'asc'; else { sortCol = col; sortDir = 'asc'; } render(); }); });
+    fN.addEventListener('input', render); fDF.addEventListener('change', render); fDT.addEventListener('change', render);
+    document.getElementById('clearFiltersBtn').addEventListener('click', function () { fN.value = ''; fDF.value = ''; fDT.value = ''; render(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape') { closeM(); iModal.classList.remove('active'); pendingImport = null; } });
+    window.addEventListener('resize', render);
+    render();
 }
 
 // ========================================
 // STRONA TRENINGU
 // ========================================
-
 function initTrainingPage() {
     var EXDATA = getLocalizedExerciseData();
-
     var params = new URLSearchParams(window.location.search);
     var trainingId = params.get('id');
     if (!trainingId) { window.location.href = 'index.html'; return; }
 
-    var exercisesBody = document.getElementById('exercisesBody');
-    var emptyMsg = document.getElementById('emptyMessage');
-    var filterType = document.getElementById('filterType');
-    var filterExercise = document.getElementById('filterExercise');
-    var exFiltersBar = document.getElementById('exerciseFiltersBar');
-    var toggleExFiltersBtn = document.getElementById('toggleExFiltersBtn');
-    var avgRatingEl = document.getElementById('trainingAvgRating');
+    var exBody = document.getElementById('exercisesBody'), empty = document.getElementById('emptyMessage');
+    var fType = document.getElementById('filterType'), fEx = document.getElementById('filterExercise');
+    var exFBar = document.getElementById('exerciseFiltersBar'), tExFBtn = document.getElementById('toggleExFiltersBtn');
+    var avgEl = document.getElementById('trainingAvgRating'), weightEl = document.getElementById('trainingBodyWeight');
+    var exSortCol = null, exSortDir = 'asc';
 
-    var exSortCol = null;
-    var exSortDir = 'asc';
-
-    // ---- Tłumaczenia ----
+    // Tłumaczenia
     document.querySelector('.back-link').textContent = t('back_to_trainings');
     document.getElementById('addExerciseBtn').textContent = t('btn_add_exercise');
-    toggleExFiltersBtn.textContent = t('btn_filters');
+    tExFBtn.textContent = t('btn_filters');
     document.querySelector('#exerciseFiltersBar label[for="filterType"]').textContent = t('filter_type');
-    filterType.querySelector('option').textContent = t('filter_all_types');
+    fType.querySelector('option').textContent = t('filter_all_types');
     document.querySelector('#exerciseFiltersBar label[for="filterExercise"]').textContent = t('filter_exercise');
-    filterExercise.placeholder = t('filter_exercise_placeholder');
+    fEx.placeholder = t('filter_exercise_placeholder');
     document.getElementById('clearExerciseFiltersBtn').textContent = t('btn_clear_filters');
-    emptyMsg.textContent = t('empty_no_exercises');
+    empty.textContent = t('empty_no_exercises');
 
     var ths = document.querySelectorAll('#exercisesTable thead th');
-    ths[0].innerHTML = t('th_type') + ' <span class="sort-icon" id="sortIconType"></span>';
-    ths[1].innerHTML = t('th_exercise') + ' <span class="sort-icon" id="sortIconExName"></span>';
-    ths[2].innerHTML = t('th_load') + ' <span class="sort-icon" id="sortIconExLoad"></span>';
-    ths[9].innerHTML = t('th_total') + ' <span class="sort-icon" id="sortIconExTotal"></span>';
-    ths[10].innerHTML = t('th_rating') + ' <span class="sort-icon" id="sortIconExRating"></span>';
+    ths[0].textContent = t('th_order');
+    ths[1].innerHTML = t('th_type') + ' <span class="sort-icon" id="sortIconType"></span>';
+    ths[2].innerHTML = t('th_exercise') + ' <span class="sort-icon" id="sortIconExName"></span>';
+    ths[3].innerHTML = t('th_load') + ' <span class="sort-icon" id="sortIconExLoad"></span>';
+    ths[10].innerHTML = t('th_total') + ' <span class="sort-icon" id="sortIconExTotal"></span>';
+    ths[11].innerHTML = t('th_rating') + ' <span class="sort-icon" id="sortIconExRating"></span>';
 
-    toggleExFiltersBtn.addEventListener('click', function () {
-        exFiltersBar.classList.toggle('collapsed');
-        toggleExFiltersBtn.classList.toggle('active');
-    });
+    tExFBtn.addEventListener('click', function () { exFBar.classList.toggle('collapsed'); tExFBtn.classList.toggle('active'); });
 
-    function getTraining() {
-        return getTrainings().find(function (x) { return x.id === trainingId; });
-    }
+    function getTr() { return getTrainings().find(function (x) { return x.id === trainingId; }); }
 
     function renderHeader() {
-        var training = getTraining();
-        if (!training) { window.location.href = 'index.html'; return; }
-        document.getElementById('trainingTitle').textContent = '🏋️ ' + training.name;
-        document.getElementById('trainingDate').textContent = new Date(training.date + 'T00:00:00').toLocaleDateString(dateLocale(), {
-            weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
-        });
-        document.title = training.name + ' - ' + t('app_title');
-        updateAvgRating();
+        var tr = getTr(); if (!tr) { window.location.href = 'index.html'; return; }
+        document.getElementById('trainingTitle').textContent = '🏋️ ' + tr.name;
+        document.getElementById('trainingDate').textContent = new Date(tr.date + 'T00:00:00').toLocaleDateString(dateLocale(), { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+        document.title = tr.name + ' - ' + t('app_title');
+        updAvg(); updWeight();
     }
 
-    function updateAvgRating() {
-        var training = getTraining();
-        if (!training) return;
-        var avg = getAverageRating(training);
-        if (training.exercises.length === 0 || avg === 0) {
-            avgRatingEl.innerHTML = '<span class="avg-label">' + t('avg_rating_label') + '</span> <span class="avg-no-data">' + t('avg_no_data') + '</span>';
-        } else {
-            avgRatingEl.innerHTML = '<span class="avg-label">' + t('avg_rating_label') + '</span> ' + renderStarsReadonly(avg) + ' <span class="avg-value">(' + avg.toFixed(1) + '/' + CONFIG.MAX_STARS + ')</span>';
-        }
+    function updAvg() {
+        var tr = getTr(); if (!tr) return; var avg = getAverageRating(tr);
+        if (!tr.exercises.length || avg === 0) avgEl.innerHTML = '<span class="avg-label">' + t('avg_rating_label') + '</span> <span class="avg-no-data">' + t('avg_no_data') + '</span>';
+        else avgEl.innerHTML = '<span class="avg-label">' + t('avg_rating_label') + '</span> ' + renderStarsReadonly(avg) + ' <span class="avg-value">(' + avg.toFixed(1) + '/' + CONFIG.MAX_STARS + ')</span>';
     }
 
-    function populateTypeFilter() {
-        var current = filterType.value;
-        filterType.innerHTML = '<option value="">' + t('filter_all_types') + '</option>';
-        Object.keys(EXDATA).forEach(function (type) {
-            var opt = document.createElement('option');
-            opt.value = type;
-            opt.textContent = type;
-            filterType.appendChild(opt);
-        });
-        filterType.value = current;
+    function updWeight() {
+        var tr = getTr(); if (!tr) return;
+        if (tr.bodyWeight) weightEl.innerHTML = '<span class="weight-label">' + t('body_weight_label') + '</span> <span class="weight-value">' + tr.bodyWeight + ' ' + t('weight_unit') + '</span>';
+        else weightEl.innerHTML = '';
     }
 
-    function buildTypeOptions(selected) {
-        var html = '<option value="">' + t('select_type_placeholder') + '</option>';
-        Object.keys(EXDATA).forEach(function (type) {
-            html += '<option value="' + type + '" ' + (type === selected ? 'selected' : '') + '>' + type + '</option>';
-        });
-        return html;
-    }
+    function popTypeFilter() { var cur = fType.value; fType.innerHTML = '<option value="">' + t('filter_all_types') + '</option>'; Object.keys(EXDATA).forEach(function (type) { var o = document.createElement('option'); o.value = type; o.textContent = type; fType.appendChild(o); }); fType.value = cur; }
+    function buildTypeOpts(s) { var h = '<option value="">' + t('select_type_placeholder') + '</option>'; Object.keys(EXDATA).forEach(function (type) { h += '<option value="' + type + '" ' + (type === s ? 'selected' : '') + '>' + type + '</option>'; }); return h; }
+    function buildExOpts(type, s) { var h = '<option value="">' + t('select_exercise_placeholder') + '</option>'; if (type && EXDATA[type]) EXDATA[type].forEach(function (n) { h += '<option value="' + n + '" ' + (n === s ? 'selected' : '') + '>' + n + '</option>'; }); return h; }
 
-    function buildExerciseOptions(type, selected) {
-        var html = '<option value="">' + t('select_exercise_placeholder') + '</option>';
-        if (type && EXDATA[type]) {
-            EXDATA[type].forEach(function (name) {
-                html += '<option value="' + name + '" ' + (name === selected ? 'selected' : '') + '>' + name + '</option>';
-            });
-        }
-        return html;
-    }
-
-    function getFilteredExercises(training) {
-        var exercises = training.exercises.map(function (ex, i) {
-            return Object.assign({}, ex, { _idx: i });
-        });
-
-        if (filterType.value) exercises = exercises.filter(function (ex) { return ex.type === filterType.value; });
-        var q = filterExercise.value.trim().toLowerCase();
-        if (q) exercises = exercises.filter(function (ex) { return (ex.name || '').toLowerCase().includes(q); });
-
+    function getFilteredEx(tr) {
+        var exs = tr.exercises.map(function (e, i) { return Object.assign({}, e, { _idx: i }); });
+        if (fType.value) exs = exs.filter(function (e) { return e.type === fType.value; });
+        var q = fEx.value.trim().toLowerCase();
+        if (q) exs = exs.filter(function (e) { return (e.name || '').toLowerCase().includes(q); });
         if (exSortCol) {
-            exercises.sort(function (a, b) {
+            exs.sort(function (a, b) {
                 var va, vb;
                 if (exSortCol === 'type') { va = (a.type || '').toLowerCase(); vb = (b.type || '').toLowerCase(); }
                 else if (exSortCol === 'name') { va = (a.name || '').toLowerCase(); vb = (b.name || '').toLowerCase(); }
                 else if (exSortCol === 'rating') { va = a.rating || 0; vb = b.rating || 0; }
                 else if (exSortCol === 'total') { va = getTotalReps(a); vb = getTotalReps(b); }
                 else if (exSortCol === 'load') { va = (a.load || '').toLowerCase(); vb = (b.load || '').toLowerCase(); }
-                if (va < vb) return exSortDir === 'asc' ? -1 : 1;
-                if (va > vb) return exSortDir === 'asc' ? 1 : -1;
-                return 0;
+                return va < vb ? (exSortDir === 'asc' ? -1 : 1) : va > vb ? (exSortDir === 'asc' ? 1 : -1) : 0;
             });
         }
-        return exercises;
+        return exs;
     }
-
-    function updateExSortIcons() {
-        ['sortIconType', 'sortIconExName', 'sortIconExRating', 'sortIconExTotal', 'sortIconExLoad'].forEach(function (id) {
-            document.getElementById(id).textContent = '';
-        });
+    function updExSort() {
+        ['sortIconType','sortIconExName','sortIconExRating','sortIconExTotal','sortIconExLoad'].forEach(function (id) { document.getElementById(id).textContent = ''; });
         if (!exSortCol) return;
-        var icon = exSortDir === 'asc' ? '▲' : '▼';
-        var map = { type: 'sortIconType', name: 'sortIconExName', rating: 'sortIconExRating', total: 'sortIconExTotal', load: 'sortIconExLoad' };
-        if (map[exSortCol]) document.getElementById(map[exSortCol]).textContent = icon;
+        var map = { type:'sortIconType', name:'sortIconExName', rating:'sortIconExRating', total:'sortIconExTotal', load:'sortIconExLoad' };
+        if (map[exSortCol]) document.getElementById(map[exSortCol]).textContent = exSortDir === 'asc' ? '▲' : '▼';
     }
+    function buildStars(r, idx) { var h = '<div class="star-rating-interactive" data-index="' + idx + '">'; for (var i = 1; i <= CONFIG.MAX_STARS; i++) h += '<span class="star-btn ' + (i <= r ? 'star-active' : '') + '" data-star="' + i + '" data-index="' + idx + '">★</span>'; return h + '</div>'; }
 
-    function buildStars(rating, idx) {
-        var html = '<div class="star-rating-interactive" data-index="' + idx + '">';
-        for (var i = 1; i <= CONFIG.MAX_STARS; i++) {
-            html += '<span class="star-btn ' + (i <= rating ? 'star-active' : '') + '" data-star="' + i + '" data-index="' + idx + '">★</span>';
-        }
-        return html + '</div>';
-    }
+    function renderEx() {
+        var tr = getTr(); if (!tr) return; exBody.innerHTML = '';
+        tExFBtn.style.display = tr.exercises.length ? '' : 'none';
+        var exs = getFilteredEx(tr);
+        var totalCount = tr.exercises.length;
+        var isFiltered = exSortCol || fType.value || fEx.value.trim();
 
-    function renderExercises() {
-        var training = getTraining();
-        if (!training) return;
-        exercisesBody.innerHTML = '';
-        toggleExFiltersBtn.style.display = training.exercises.length === 0 ? 'none' : '';
+        if (!exs.length) { empty.style.display = 'block'; empty.textContent = !tr.exercises.length ? t('empty_no_exercises') : t('empty_no_exercise_filter_match'); document.getElementById('exercisesTable').style.display = 'none'; return; }
+        empty.style.display = 'none'; document.getElementById('exercisesTable').style.display = 'table'; updExSort();
 
-        var exercises = getFilteredExercises(training);
+        exs.forEach(function (ex) {
+            var i = ex._idx; var row = document.createElement('tr'); row.dataset.index = i;
+            var s = ex.series || []; var total = getTotalReps(ex);
+            var seriesH = ''; for (var si = 0; si < CONFIG.MAX_SERIES; si++) seriesH += '<td class="td-series"><input type="number" class="inline-input inline-series" data-index="' + i + '" data-series="' + si + '" min="0" placeholder="-" value="' + (s[si] != null ? s[si] : '') + '"></td>';
 
-        if (exercises.length === 0) {
-            emptyMsg.style.display = 'block';
-            emptyMsg.textContent = training.exercises.length === 0 ? t('empty_no_exercises') : t('empty_no_exercise_filter_match');
-            document.getElementById('exercisesTable').style.display = 'none';
-            return;
-        }
-
-        emptyMsg.style.display = 'none';
-        document.getElementById('exercisesTable').style.display = 'table';
-        updateExSortIcons();
-
-        exercises.forEach(function (ex) {
-            var i = ex._idx;
-            var row = document.createElement('tr');
-            row.dataset.index = i;
-            var s = ex.series || [];
-            var total = getTotalReps(ex);
-
-            var seriesHtml = '';
-            for (var si = 0; si < CONFIG.MAX_SERIES; si++) {
-                seriesHtml += '<td class="td-series"><input type="number" class="inline-input inline-series" data-index="' + i + '" data-series="' + si + '" min="0" placeholder="-" value="' + (s[si] != null ? s[si] : '') + '"></td>';
+            var moveH = '<td class="td-order">';
+            if (!isFiltered) {
+                moveH += '<button class="move-btn move-up" data-index="' + i + '" title="' + t('move_up_title') + '" ' + (i === 0 ? 'disabled' : '') + '>▲</button>';
+                moveH += '<button class="move-btn move-down" data-index="' + i + '" title="' + t('move_down_title') + '" ' + (i === totalCount - 1 ? 'disabled' : '') + '>▼</button>';
             }
+            moveH += '</td>';
 
-            row.innerHTML =
-                '<td class="td-type"><select class="inline-select inline-type" data-index="' + i + '">' + buildTypeOptions(ex.type) + '</select></td>' +
-                '<td class="td-name"><select class="inline-select inline-name" data-index="' + i + '">' + buildExerciseOptions(ex.type, ex.name) + '</select></td>' +
+            row.innerHTML = moveH +
+                '<td class="td-type"><select class="inline-select inline-type" data-index="' + i + '">' + buildTypeOpts(ex.type) + '</select></td>' +
+                '<td class="td-name"><select class="inline-select inline-name" data-index="' + i + '">' + buildExOpts(ex.type, ex.name) + '</select></td>' +
                 '<td class="td-load"><input type="text" class="inline-input inline-load" data-index="' + i + '" placeholder="' + t('load_placeholder') + '" value="' + escapeHtml(ex.load || '') + '"></td>' +
-                seriesHtml +
+                seriesH +
                 '<td class="td-total" data-index="' + i + '">' + (total > 0 ? total : '-') + '</td>' +
                 '<td class="td-rating-interactive">' + buildStars(ex.rating || 0, i) + '</td>' +
                 '<td class="td-action"><button class="btn btn-small btn-delete btn-delete-row" data-index="' + i + '" title="' + t('btn_delete_exercise_title') + '">✕</button></td>';
-
-            exercisesBody.appendChild(row);
+            exBody.appendChild(row);
         });
-        updateAvgRating();
+        updAvg();
     }
 
-    function updateTotalCell(index) {
-        var training = getTraining();
-        if (!training || !training.exercises[index]) return;
-        var total = getTotalReps(training.exercises[index]);
-        var cell = exercisesBody.querySelector('.td-total[data-index="' + index + '"]');
-        if (cell) cell.textContent = total > 0 ? total : '-';
+    function updTotal(idx) { var tr = getTr(); if (!tr || !tr.exercises[idx]) return; var cell = exBody.querySelector('.td-total[data-index="' + idx + '"]'); if (cell) { var tot = getTotalReps(tr.exercises[idx]); cell.textContent = tot > 0 ? tot : '-'; } }
+
+    function saveField(idx, field, val) {
+        var ts = getTrainings(); var tr = ts.find(function (x) { return x.id === trainingId; });
+        if (!tr || !tr.exercises[idx]) return;
+        if (field === 'type') { tr.exercises[idx].type = val; tr.exercises[idx].name = ''; saveTrainings(ts); renderEx(); }
+        else if (field === 'name') { tr.exercises[idx].name = val; saveTrainings(ts); }
+        else if (field === 'load') { tr.exercises[idx].load = val; saveTrainings(ts); }
+        else if (field === 'series') { tr.exercises[idx].series = normalizeSeries(tr.exercises[idx].series); tr.exercises[idx].series[val.si] = val.reps !== '' ? parseInt(val.reps) : null; saveTrainings(ts); updTotal(idx); }
+        else if (field === 'rating') { tr.exercises[idx].rating = val; saveTrainings(ts); updAvg(); }
     }
 
-    function saveField(index, field, value) {
-        var trainings = getTrainings();
-        var training = trainings.find(function (x) { return x.id === trainingId; });
-        if (!training || !training.exercises[index]) return;
+    exBody.addEventListener('change', function (e) { var tgt = e.target; var idx = parseInt(tgt.dataset.index); if (isNaN(idx)) return; if (tgt.classList.contains('inline-type')) saveField(idx, 'type', tgt.value); else if (tgt.classList.contains('inline-name')) saveField(idx, 'name', tgt.value); else if (tgt.classList.contains('inline-load')) saveField(idx, 'load', tgt.value); else if (tgt.classList.contains('inline-series')) saveField(idx, 'series', { si: parseInt(tgt.dataset.series), reps: tgt.value }); });
+    exBody.addEventListener('input', function (e) { var tgt = e.target; var idx = parseInt(tgt.dataset.index); if (isNaN(idx)) return; if (tgt.classList.contains('inline-series')) saveField(idx, 'series', { si: parseInt(tgt.dataset.series), reps: tgt.value }); else if (tgt.classList.contains('inline-load')) saveField(idx, 'load', tgt.value); });
 
-        if (field === 'type') {
-            training.exercises[index].type = value;
-            training.exercises[index].name = '';
-            saveTrainings(trainings);
-            renderExercises();
-        } else if (field === 'name') {
-            training.exercises[index].name = value;
-            saveTrainings(trainings);
-        } else if (field === 'load') {
-            training.exercises[index].load = value;
-            saveTrainings(trainings);
-        } else if (field === 'series') {
-            training.exercises[index].series = normalizeSeries(training.exercises[index].series);
-            training.exercises[index].series[value.seriesIndex] = value.reps !== '' ? parseInt(value.reps) : null;
-            saveTrainings(trainings);
-            updateTotalCell(index);
-        } else if (field === 'rating') {
-            training.exercises[index].rating = value;
-            saveTrainings(trainings);
-            updateAvgRating();
-        }
-    }
-
-    // ---- Zdarzenia tabeli ----
-    exercisesBody.addEventListener('change', function (e) {
+    exBody.addEventListener('click', function (e) {
         var tgt = e.target;
-        var idx = parseInt(tgt.dataset.index);
-        if (isNaN(idx)) return;
-
-        if (tgt.classList.contains('inline-type')) saveField(idx, 'type', tgt.value);
-        else if (tgt.classList.contains('inline-name')) saveField(idx, 'name', tgt.value);
-        else if (tgt.classList.contains('inline-load')) saveField(idx, 'load', tgt.value);
-        else if (tgt.classList.contains('inline-series')) {
-            saveField(idx, 'series', { seriesIndex: parseInt(tgt.dataset.series), reps: tgt.value });
-        }
-    });
-
-    exercisesBody.addEventListener('input', function (e) {
-        var tgt = e.target;
-        var idx = parseInt(tgt.dataset.index);
-        if (isNaN(idx)) return;
-
-        if (tgt.classList.contains('inline-series')) {
-            saveField(idx, 'series', { seriesIndex: parseInt(tgt.dataset.series), reps: tgt.value });
-        } else if (tgt.classList.contains('inline-load')) {
-            saveField(idx, 'load', tgt.value);
-        }
-    });
-
-    exercisesBody.addEventListener('click', function (e) {
-        var tgt = e.target;
-
+        // Gwiazdki
         if (tgt.classList.contains('star-btn')) {
-            var idx = parseInt(tgt.dataset.index);
-            var star = parseInt(tgt.dataset.star);
+            var idx = parseInt(tgt.dataset.index), star = parseInt(tgt.dataset.star);
             if (isNaN(idx) || isNaN(star)) return;
-
-            var training = getTraining();
-            var current = (training && training.exercises[idx]) ? (training.exercises[idx].rating || 0) : 0;
-            var newRating = current === star ? 0 : star;
-            saveField(idx, 'rating', newRating);
-
-            var container = tgt.closest('.star-rating-interactive');
-            if (container) {
-                container.querySelectorAll('.star-btn').forEach(function (btn) {
-                    btn.classList.toggle('star-active', parseInt(btn.dataset.star) <= newRating);
-                });
-            }
+            var tr = getTr(); var cur = (tr && tr.exercises[idx]) ? (tr.exercises[idx].rating || 0) : 0;
+            var nR = cur === star ? 0 : star; saveField(idx, 'rating', nR);
+            var c = tgt.closest('.star-rating-interactive');
+            if (c) c.querySelectorAll('.star-btn').forEach(function (b) { b.classList.toggle('star-active', parseInt(b.dataset.star) <= nR); });
             return;
         }
-
+        // Usuń z potwierdzeniem
         if (tgt.classList.contains('btn-delete-row')) {
             var idx2 = parseInt(tgt.dataset.index);
-            if (!isNaN(idx2)) {
-                deleteExercise(trainingId, idx2);
-                renderExercises();
-            }
+            if (!isNaN(idx2) && confirm(t('confirm_delete_exercise'))) { deleteExercise(trainingId, idx2); renderEx(); }
+            return;
+        }
+        // Przenieś w górę
+        if (tgt.classList.contains('move-up')) {
+            var idx3 = parseInt(tgt.dataset.index);
+            if (!isNaN(idx3) && idx3 > 0) { moveExercise(trainingId, idx3, idx3 - 1); renderEx(); }
+            return;
+        }
+        // Przenieś w dół
+        if (tgt.classList.contains('move-down')) {
+            var idx4 = parseInt(tgt.dataset.index);
+            var tr2 = getTr();
+            if (!isNaN(idx4) && tr2 && idx4 < tr2.exercises.length - 1) { moveExercise(trainingId, idx4, idx4 + 1); renderEx(); }
+            return;
         }
     });
 
-    exercisesBody.addEventListener('mouseover', function (e) {
-        if (!e.target.classList.contains('star-btn')) return;
-        var container = e.target.closest('.star-rating-interactive');
-        var hoverStar = parseInt(e.target.dataset.star);
-        if (container && !isNaN(hoverStar)) {
-            container.querySelectorAll('.star-btn').forEach(function (btn) {
-                btn.classList.toggle('star-hover', parseInt(btn.dataset.star) <= hoverStar);
-            });
-        }
-    });
+    exBody.addEventListener('mouseover', function (e) { if (!e.target.classList.contains('star-btn')) return; var c = e.target.closest('.star-rating-interactive'); var h = parseInt(e.target.dataset.star); if (c && !isNaN(h)) c.querySelectorAll('.star-btn').forEach(function (b) { b.classList.toggle('star-hover', parseInt(b.dataset.star) <= h); }); });
+    exBody.addEventListener('mouseout', function (e) { if (!e.target.classList.contains('star-btn')) return; var c = e.target.closest('.star-rating-interactive'); if (c) c.querySelectorAll('.star-btn').forEach(function (b) { b.classList.remove('star-hover'); }); });
 
-    exercisesBody.addEventListener('mouseout', function (e) {
-        if (!e.target.classList.contains('star-btn')) return;
-        var container = e.target.closest('.star-rating-interactive');
-        if (container) {
-            container.querySelectorAll('.star-btn').forEach(function (btn) {
-                btn.classList.remove('star-hover');
-            });
-        }
-    });
+    document.querySelectorAll('#exercisesTable th.sortable').forEach(function (th) { th.addEventListener('click', function () { var col = th.dataset.sort; if (exSortCol === col) exSortDir = exSortDir === 'asc' ? 'desc' : 'asc'; else { exSortCol = col; exSortDir = 'asc'; } renderEx(); }); });
+    fType.addEventListener('change', renderEx); fEx.addEventListener('input', renderEx);
+    document.getElementById('clearExerciseFiltersBtn').addEventListener('click', function () { fType.value = ''; fEx.value = ''; exSortCol = null; renderEx(); });
 
-    // ---- Sortowanie ----
-    document.querySelectorAll('#exercisesTable th.sortable').forEach(function (th) {
-        th.addEventListener('click', function () {
-            var col = th.dataset.sort;
-            if (exSortCol === col) exSortDir = exSortDir === 'asc' ? 'desc' : 'asc';
-            else { exSortCol = col; exSortDir = 'asc'; }
-            renderExercises();
-        });
-    });
-
-    // ---- Filtry ----
-    filterType.addEventListener('change', renderExercises);
-    filterExercise.addEventListener('input', renderExercises);
-    document.getElementById('clearExerciseFiltersBtn').addEventListener('click', function () {
-        filterType.value = '';
-        filterExercise.value = '';
-        exSortCol = null;
-        renderExercises();
-    });
-
-    // ---- Dodaj ćwiczenie ----
     document.getElementById('addExerciseBtn').addEventListener('click', function () {
-        filterType.value = '';
-        filterExercise.value = '';
-        exSortCol = null;
-
-        var emptySeries = [];
-        for (var i = 0; i < CONFIG.MAX_SERIES; i++) emptySeries.push(null);
-
+        fType.value = ''; fEx.value = ''; exSortCol = null;
+        var emptySeries = []; for (var i = 0; i < CONFIG.MAX_SERIES; i++) emptySeries.push(null);
         addExercise(trainingId, { type: '', name: '', load: '', series: emptySeries, rating: 0 });
-        renderExercises();
-
-        var rows = exercisesBody.querySelectorAll('tr');
-        if (rows.length > 0) {
-            var lastSelect = rows[rows.length - 1].querySelector('.inline-type');
-            if (lastSelect) lastSelect.focus();
-        }
+        renderEx();
+        var rows = exBody.querySelectorAll('tr');
+        if (rows.length) { var sel = rows[rows.length - 1].querySelector('.inline-type'); if (sel) sel.focus(); }
         window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     });
 
-    // ---- Init ----
-    populateTypeFilter();
-    renderHeader();
-    renderExercises();
+    popTypeFilter(); renderHeader(); renderEx();
 }
