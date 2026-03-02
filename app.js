@@ -1,7 +1,3 @@
-// ========================================
-// Dziennik Treningowy - Logika
-// ========================================
-
 function getTrainings(){var d=localStorage.getItem(CONFIG.STORAGE_KEY);return d?JSON.parse(d):[];}
 function saveTrainings(ts){localStorage.setItem(CONFIG.STORAGE_KEY,JSON.stringify(ts));}
 function generateId(){return Date.now().toString(36)+Math.random().toString(36).substring(2,8);}
@@ -50,9 +46,16 @@ function getTotalReps(ex){
     var s=ex.series||[];var tot=0;
     for(var i=0;i<CONFIG.MAX_SERIES;i++)if(s[i]!=null&&!isNaN(s[i]))tot+=s[i];return tot;
 }
-function getRepsClass(total){
-    if(total>60)return'reps-purple';if(total>48)return'reps-green';
-    if(total<40)return'reps-red';if(total<48)return'reps-orange';return'';
+function getRepsClass(total,type){
+    if(type){
+        var cardioName=tCategory('cardio');
+        if(type===cardioName||type.toLowerCase()==='cardio')return'';
+    }
+    if(total>60)return'reps-purple';
+    if(total>48)return'reps-green';
+    if(total<40)return'reps-red';
+    if(total<48)return'reps-orange';
+    return'';
 }
 function exportData(){return JSON.stringify({version:CONFIG.DATA_VERSION,exportedAt:new Date().toISOString(),trainings:getTrainings()},null,2);}
 function importData(data,mode){
@@ -91,7 +94,6 @@ function initSettings(){
     overlay.addEventListener('click',function(e){if(e.target===overlay)close();});
     document.addEventListener('keydown',function(e){if(e.key==='Escape'&&overlay.classList.contains('open'))close();});
 
-    // Motyw
     var bL=document.getElementById('themeBtnLight');
     var bD=document.getElementById('themeBtnDark');
     function updTh(){var a=getActiveTheme();bL.classList.toggle('active',a==='light');bD.classList.toggle('active',a==='dark');}
@@ -99,7 +101,6 @@ function initSettings(){
     bD.addEventListener('click',function(){applyTheme('dark');updTh();});
     updTh();
 
-    // Język
     var aLang=getActiveLanguage();
     langSw.innerHTML='';
     CONFIG.AVAILABLE_LANGUAGES.forEach(function(code){
@@ -112,7 +113,6 @@ function initSettings(){
         langSw.appendChild(b);
     });
 
-    // Zarządzanie ćwiczeniami
     var catSelect=document.getElementById('settingsExCategorySelect');
     var nameInput=document.getElementById('settingsExNameInput');
     var addExBtn=document.getElementById('settingsExAddBtn');
@@ -205,7 +205,6 @@ function initIndexPage(){
     var sortCol=CONFIG.DEFAULT_SORT_COLUMN,sortDir=CONFIG.DEFAULT_SORT_DIRECTION;
     var sel=new Set();
 
-    // Tłumaczenia
     document.title=t('app_title');
     document.querySelector('h1').textContent=t('app_title_emoji');
     document.getElementById('addTrainingBtn').textContent=t('btn_add_training');
@@ -313,7 +312,7 @@ function initIndexPage(){
         ts.forEach(function(tr){
             var row=document.createElement('tr');row.dataset.id=tr.id;
             var wt=tr.bodyWeight?tr.bodyWeight+' '+t('weight_unit'):'-';
-            row.innerHTML='<td class="td-checkbox"><input type="checkbox" class="row-checkbox" data-id="'+tr.id+'" '+(sel.has(tr.id)?'checked':'')+'></td>'+'<td class="clickable" data-id="'+tr.id+'">'+escapeHtml(tr.name)+'</td>'+'<td class="clickable" data-id="'+tr.id+'">'+fmtD(tr.date)+'</td>'+'<td class="clickable td-weight" data-id="'+tr.id+'">'+wt+'</td>'+'<td class="clickable" data-id="'+tr.id+'">'+tr.exercises.length+'</td>'+'<td class="clickable td-rating" data-id="'+tr.id+'">'+renderStarsReadonly(getAverageRating(tr))+'</td>';
+            row.innerHTML='<td class="td-checkbox"><input type="checkbox" class="row-checkbox" data-id="'+tr.id+'" '+(sel.has(tr.id)?'checked':'')+'></td><td class="clickable" data-id="'+tr.id+'">'+escapeHtml(tr.name)+'</td><td class="clickable" data-id="'+tr.id+'">'+fmtD(tr.date)+'</td><td class="clickable td-weight" data-id="'+tr.id+'">'+wt+'</td><td class="clickable" data-id="'+tr.id+'">'+tr.exercises.length+'</td><td class="clickable td-rating" data-id="'+tr.id+'">'+renderStarsReadonly(getAverageRating(tr))+'</td>';
             body.appendChild(row);
         });updSel();
     }
@@ -479,12 +478,12 @@ function initTrainingPage(){
         empty.style.display='none';document.getElementById('exercisesTable').style.display='table';updExSort();
         exs.forEach(function(ex){
             var i=ex._idx;var row=document.createElement('tr');row.dataset.index=i;
-            var s=ex.series||[];var total=getTotalReps(ex);var repsClass=getRepsClass(total);
+            var s=ex.series||[];var total=getTotalReps(ex);var repsClass=getRepsClass(total,ex.type);
             var seriesH='';for(var si=0;si<CONFIG.MAX_SERIES;si++)seriesH+='<td class="td-series"><input type="number" class="inline-input inline-series" data-index="'+i+'" data-series="'+si+'" min="0" placeholder="-" value="'+(s[si]!=null?s[si]:'')+'"></td>';
             var moveH='<td class="td-order">';
             if(!isFiltered){moveH+='<button class="move-btn move-up" data-index="'+i+'" title="'+t('move_up_title')+'" '+(i===0?'disabled':'')+'>▲</button>';moveH+='<button class="move-btn move-down" data-index="'+i+'" title="'+t('move_down_title')+'" '+(i===totalCount-1?'disabled':'')+'>▼</button>';}
             moveH+='</td>';
-            row.innerHTML=moveH+'<td class="td-type '+repsClass+'"><select class="inline-select inline-type" data-index="'+i+'">'+buildTypeOpts(ex.type)+'</select></td>'+'<td class="td-name '+repsClass+'"><select class="inline-select inline-name" data-index="'+i+'">'+buildExOpts(ex.type,ex.name)+'</select></td>'+'<td class="td-load"><input type="text" class="inline-input inline-load" data-index="'+i+'" placeholder="'+t('load_placeholder')+'" value="'+escapeHtml(ex.load||'')+'"></td>'+seriesH+'<td class="td-total" data-index="'+i+'">'+(total>0?total:'-')+'</td>'+'<td class="td-rating-interactive">'+buildStars(ex.rating||0,i)+'</td>'+'<td class="td-action"><button class="btn btn-small btn-delete btn-delete-row" data-index="'+i+'" title="'+t('btn_delete_exercise_title')+'">✕</button></td>';
+            row.innerHTML=moveH+'<td class="td-type '+repsClass+'"><select class="inline-select inline-type" data-index="'+i+'">'+buildTypeOpts(ex.type)+'</select></td><td class="td-name '+repsClass+'"><select class="inline-select inline-name" data-index="'+i+'">'+buildExOpts(ex.type,ex.name)+'</select></td><td class="td-load"><input type="text" class="inline-input inline-load" data-index="'+i+'" placeholder="'+t('load_placeholder')+'" value="'+escapeHtml(ex.load||'')+'"></td>'+seriesH+'<td class="td-total" data-index="'+i+'">'+(total>0?total:'-')+'</td><td class="td-rating-interactive">'+buildStars(ex.rating||0,i)+'</td><td class="td-action"><button class="btn btn-small btn-delete btn-delete-row" data-index="'+i+'" title="'+t('btn_delete_exercise_title')+'">✕</button></td>';
             exBody.appendChild(row);
         });updAvg();
     }
@@ -494,7 +493,7 @@ function initTrainingPage(){
         var total=getTotalReps(tr.exercises[idx]);
         var cell=exBody.querySelector('.td-total[data-index="'+idx+'"]');
         if(cell)cell.textContent=total>0?total:'-';
-        var repsClass=getRepsClass(total);
+        var repsClass=getRepsClass(total,tr.exercises[idx].type);
         var row=exBody.querySelector('tr[data-index="'+idx+'"]');
         if(row){
             var tc=row.querySelector('.td-type');var nc=row.querySelector('.td-name');
@@ -538,7 +537,7 @@ function initTrainingPage(){
         addExercise(trainingId,{type:'',name:'',load:'',series:emptySeries,rating:0});
         renderEx();
         var rows=exBody.querySelectorAll('tr');
-        if(rows.length){var sel=rows[rows.length-1].querySelector('.inline-type');if(sel)sel.focus();}
+        if(rows.length){var sel2=rows[rows.length-1].querySelector('.inline-type');if(sel2)sel2.focus();}
         window.scrollTo({top:document.body.scrollHeight,behavior:'smooth'});
     });
 
