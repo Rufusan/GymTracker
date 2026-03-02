@@ -52,11 +52,9 @@ const TRANSLATIONS = {
         date_locale: 'pl-PL',
         settings_title: '⚙ Ustawienia', settings_theme: 'Motyw', settings_language: 'Język',
         weight_unit: 'kg',
-
         category_chest: 'Klatka piersiowa', category_back: 'Plecy', category_shoulders: 'Barki',
         category_legs: 'Nogi', category_biceps: 'Biceps', category_triceps: 'Triceps',
         category_core: 'Brzuch', category_cardio: 'Kardio',
-
         ex_bench_press: 'Wyciskanie na ławce', ex_incline_bench_press: 'Wyciskanie na ławce skośnej',
         ex_decline_bench_press: 'Wyciskanie na ławce ujemnej', ex_dumbbell_fly: 'Rozpiętki z hantlami',
         ex_cable_crossover: 'Krzyżowanie linek', ex_push_up: 'Pompki', ex_chest_dip: 'Dipy na klatkę',
@@ -85,7 +83,6 @@ const TRANSLATIONS = {
         ex_elliptical: 'Orbitrek', ex_stair_climber: 'Wchodzenie po schodach',
         ex_swimming: 'Pływanie', ex_burpees: 'Burpees'
     },
-
     en: {
         language_name: 'English', language_flag: '🇬🇧', html_lang: 'en',
         app_title: 'Gym Tracker', app_title_emoji: '🏋️ Gym Tracker',
@@ -135,11 +132,9 @@ const TRANSLATIONS = {
         date_locale: 'en-US',
         settings_title: '⚙ Settings', settings_theme: 'Theme', settings_language: 'Language',
         weight_unit: 'kg',
-
         category_chest: 'Chest', category_back: 'Back', category_shoulders: 'Shoulders',
         category_legs: 'Legs', category_biceps: 'Biceps', category_triceps: 'Triceps',
         category_core: 'Core', category_cardio: 'Cardio',
-
         ex_bench_press: 'Bench Press', ex_incline_bench_press: 'Incline Bench Press',
         ex_decline_bench_press: 'Decline Bench Press', ex_dumbbell_fly: 'Dumbbell Fly',
         ex_cable_crossover: 'Cable Crossover', ex_push_up: 'Push-Up', ex_chest_dip: 'Chest Dip',
@@ -167,7 +162,6 @@ const TRANSLATIONS = {
     }
 };
 
-// ---- Wykrywanie języka ----
 function detectLanguage() {
     if (CONFIG.LANGUAGE_STORAGE_KEY) { var s = localStorage.getItem(CONFIG.LANGUAGE_STORAGE_KEY); if (s && TRANSLATIONS[s]) return s; }
     if (CONFIG.LANGUAGE !== 'auto' && TRANSLATIONS[CONFIG.LANGUAGE]) return CONFIG.LANGUAGE;
@@ -191,10 +185,8 @@ function tCategory(k) { return t('category_' + k); }
 function tExercise(k) { return t('ex_' + k); }
 function tDateHelper(offset) { if (offset === 0) return t('date_today'); if (offset === -1) return t('date_yesterday'); return t('date_days_ago', { days: Math.abs(offset) }); }
 function getLocalizedExerciseData() { var r = {}; Object.keys(CONFIG.EXERCISE_DATA).forEach(function (ck) { r[tCategory(ck)] = CONFIG.EXERCISE_DATA[ck].map(function (ek) { return tExercise(ek); }); }); return r; }
-
 (function () { var hl = t('html_lang'); if (hl && hl !== 'html_lang') document.documentElement.lang = hl; })();
 
-// ---- Motyw ----
 function detectTheme() {
     if (CONFIG.THEME_STORAGE_KEY) { var s = localStorage.getItem(CONFIG.THEME_STORAGE_KEY); if (s === 'light' || s === 'dark') return s; }
     if (CONFIG.THEME === 'light' || CONFIG.THEME === 'dark') return CONFIG.THEME;

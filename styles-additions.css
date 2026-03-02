@@ -1,109 +1,18 @@
-/* ---- Kolejność ćwiczeń ---- */
+/* ---- Kolorowanie ćwiczeń wg sumy powtórzeń ---- */
 
-.th-order {
-    width: 50px;
-    min-width: 50px;
-    text-align: center;
-    padding: 12px 4px !important;
-}
+.reps-red { color: var(--accent-red) !important; }
+.reps-orange { color: #d29922 !important; }
+.reps-green { color: var(--accent-green-text) !important; }
+.reps-purple { color: var(--accent-purple) !important; }
 
-.td-order {
-    text-align: center;
-    padding: 4px 2px !important;
-    white-space: nowrap;
-    width: 50px;
-    min-width: 50px;
-}
+[data-theme="light"] .reps-red { color: var(--accent-red) !important; }
+[data-theme="light"] .reps-orange { color: #bf8700 !important; }
+[data-theme="light"] .reps-green { color: #1a7f37 !important; }
+[data-theme="light"] .reps-purple { color: #8250df !important; }
 
-.move-btn {
-    width: 24px;
-    height: 24px;
-    border: none;
-    border-radius: 4px;
-    background: none;
-    color: var(--text-secondary);
-    font-size: 0.85rem;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.15s, color 0.15s;
-    padding: 0;
-    line-height: 1;
-}
-
-.move-btn:hover {
-    background-color: var(--bg-tertiary);
-    color: var(--accent-blue);
-}
-
-.move-btn:active {
-    transform: scale(0.9);
-}
-
-.move-btn:disabled {
-    opacity: 0.2;
-    cursor: default;
-}
-
-.move-btn:disabled:hover {
-    background: none;
-    color: var(--text-secondary);
-}
-
-/* ---- Meta treningu ---- */
-
-.training-meta {
-    display: flex;
-    gap: 20px;
-    flex-wrap: wrap;
-    margin-bottom: 1.5rem;
-    align-items: center;
-}
-
-.training-body-weight {
-    font-size: 0.95rem;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.weight-label {
-    color: var(--text-secondary);
-    font-weight: 600;
-}
-
-.weight-value {
-    color: var(--accent-yellow);
-    font-weight: 700;
-}
-
-.weight-no-data {
-    color: var(--text-muted);
-    font-style: italic;
-}
-
-/* ---- Kolumna masy w tabeli treningów ---- */
-
-.td-weight {
-    text-align: center;
-    color: var(--accent-yellow);
-    font-weight: 600;
-    white-space: nowrap;
-}
-
-/* ---- Responsywność dla nowych elementów ---- */
-
-@media (max-width: 480px) {
-    .th-order { width: 42px; min-width: 42px; }
-    .td-order { width: 42px; min-width: 42px; }
-    .move-btn { width: 22px; height: 22px; font-size: 0.75rem; }
-    .training-meta { gap: 12px; margin-bottom: 1rem; }
-    .training-body-weight { font-size: 0.85rem; }
-}
-
-@media (max-width: 350px) {
-    .th-order { width: 36px; min-width: 36px; }
-    .td-order { width: 36px; min-width: 36px; }
-    .move-btn { width: 20px; height: 20px; font-size: 0.7rem; }
+.reps-red .inline-select,
+.reps-orange .inline-select,
+.reps-green .inline-select,
+.reps-purple .inline-select {
+    color: inherit !important;
 }
