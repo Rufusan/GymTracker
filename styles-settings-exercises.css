@@ -1,0 +1,134 @@
+/* ---- Sekcja ćwiczeń w ustawieniach ---- */
+
+.settings-section {
+    padding-top: 12px;
+    border-top: 1px solid var(--border-secondary);
+}
+
+.settings-section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 6px;
+}
+
+.settings-section-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
+.settings-exercise-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.settings-select {
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    background-color: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.settings-select:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.settings-input {
+    flex: 1;
+    padding: 9px 10px;
+    border: 1px solid var(--border-primary);
+    border-radius: 6px;
+    background-color: var(--bg-input);
+    color: var(--text-primary);
+    font-size: 14px;
+}
+
+.settings-input:focus {
+    outline: none;
+    border-color: var(--accent-blue);
+    box-shadow: 0 0 0 3px var(--focus-ring);
+}
+
+.settings-input::placeholder {
+    color: var(--text-muted);
+}
+
+.settings-exercise-add-row {
+    display: flex;
+    gap: 8px;
+}
+
+.settings-exercise-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.settings-ex-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 7px 10px;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-secondary);
+    border-radius: 6px;
+    font-size: 0.85rem;
+}
+
+.settings-ex-item-name {
+    flex: 1;
+    color: var(--text-primary);
+    word-break: break-word;
+}
+
+.settings-ex-item-badge {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+}
+
+.settings-ex-item-badge.custom {
+    color: var(--accent-green-text);
+}
+
+.settings-ex-delete-btn {
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 4px;
+    background: none;
+    color: var(--accent-red);
+    font-size: 0.9rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.15s;
+    flex-shrink: 0;
+}
+
+.settings-ex-delete-btn:hover {
+    background-color: var(--accent-red-bg-subtle);
+}
+
+.settings-ex-empty {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    font-style: italic;
+    padding: 8px 0;
+}

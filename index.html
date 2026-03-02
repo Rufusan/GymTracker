@@ -10,7 +10,6 @@
     <meta name="theme-color" content="#238636">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="Dziennik Treningowy">
     <link rel="apple-touch-icon" href="icons/icon-192.png">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
@@ -34,6 +33,21 @@
                 <div class="settings-item">
                     <div class="settings-item-label"><span class="settings-item-icon">🌍</span><span id="settingsLangLabel"></span></div>
                     <div class="settings-lang-switcher" id="langSwitcher"></div>
+                </div>
+                <div class="settings-section">
+                    <div class="settings-section-header">
+                        <span class="settings-item-icon">🏋️</span>
+                        <span id="settingsExercisesLabel"></span>
+                    </div>
+                    <p class="settings-section-desc" id="settingsExercisesDesc"></p>
+                    <div class="settings-exercise-form">
+                        <select id="settingsExCategorySelect" class="settings-select"></select>
+                        <div class="settings-exercise-add-row">
+                            <input type="text" id="settingsExNameInput" class="settings-input" maxlength="60">
+                            <button class="btn btn-small btn-primary" id="settingsExAddBtn"></button>
+                        </div>
+                    </div>
+                    <div class="settings-exercise-list" id="settingsExList"></div>
                 </div>
             </div>
         </div>
