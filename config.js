@@ -1,11 +1,8 @@
-// ========================================
-// Konfiguracja aplikacji
-// ========================================
-
 const CONFIG = {
     STORAGE_KEY: 'gymTracker_trainings',
     LANGUAGE_STORAGE_KEY: 'gymTracker_language',
     THEME_STORAGE_KEY: 'gymTracker_theme',
+    CUSTOM_EXERCISES_KEY: 'gymTracker_customExercises',
     DATA_VERSION: 1,
     MAX_SERIES: 6,
     MAX_STARS: 5,
@@ -15,12 +12,6 @@ const CONFIG = {
     THEME: 'auto',
     DEFAULT_SORT_COLUMN: 'date',
     DEFAULT_SORT_DIRECTION: 'desc',
-    DATE_HELPERS: [
-        { offset: 0 },
-        { offset: -1 },
-        { offset: -2 },
-        { offset: -3 }
-    ],
     PDF_ORIENTATION: 'landscape',
     PDF_HEADER_COLOR: [35, 134, 54],
     PDF_ALT_ROW_COLOR: [245, 245, 245],
@@ -35,3 +26,26 @@ const CONFIG = {
         'cardio': ['running', 'cycling', 'rowing', 'jump_rope', 'elliptical', 'stair_climber', 'swimming', 'burpees']
     }
 };
+
+function getCustomExercises() {
+    var d = localStorage.getItem(CONFIG.CUSTOM_EXERCISES_KEY);
+    return d ? JSON.parse(d) : {};
+}
+function saveCustomExercises(data) {
+    localStorage.setItem(CONFIG.CUSTOM_EXERCISES_KEY, JSON.stringify(data));
+}
+function addCustomExercise(categoryKey, exerciseName) {
+    var custom = getCustomExercises();
+    if (!custom[categoryKey]) custom[categoryKey] = [];
+    if (custom[categoryKey].indexOf(exerciseName) === -1) {
+        custom[categoryKey].push(exerciseName);
+        saveCustomExercises(custom);
+    }
+}
+function removeCustomExercise(categoryKey, exerciseName) {
+    var custom = getCustomExercises();
+    if (!custom[categoryKey]) return;
+    custom[categoryKey] = custom[categoryKey].filter(function (n) { return n !== exerciseName; });
+    if (!custom[categoryKey].length) delete custom[categoryKey];
+    saveCustomExercises(custom);
+}

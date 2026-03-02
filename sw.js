@@ -1,46 +1,5 @@
-const CACHE_NAME = 'gym-tracker-v2';
-
-const ASSETS_TO_CACHE = [
-  './',
-  './index.html',
-  './training.html',
-  './config.js',
-  './lang.js',
-  './app.js',
-  './styles.css',
-  './manifest.json',
-  './icons/icon-192.png',
-  './icons/icon-512.png'
-];
-
-self.addEventListener('install', (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(ASSETS_TO_CACHE)));
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', (event) => {
-  event.waitUntil(caches.keys().then(names => Promise.all(names.filter(n => n !== CACHE_NAME).map(n => caches.delete(n)))));
-  self.clients.claim();
-});
-
-self.addEventListener('fetch', (event) => {
-  if (event.request.method !== 'GET') return;
-  if (event.request.url.includes('cdnjs.cloudflare.com')) {
-    event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
-    return;
-  }
-  event.respondWith(
-    caches.match(event.request).then(cached => {
-      if (cached) {
-        fetch(event.request).then(resp => {
-          if (resp && resp.status === 200) caches.open(CACHE_NAME).then(c => c.put(event.request, resp.clone()));
-        }).catch(() => {});
-        return cached;
-      }
-      return fetch(event.request).then(resp => {
-        if (resp && resp.status === 200) { const cl = resp.clone(); caches.open(CACHE_NAME).then(c => c.put(event.request, cl)); }
-        return resp;
-      });
-    })
-  );
-});
+var CACHE_NAME='gym-tracker-v4';
+var ASSETS=['./','./index.html','./training.html','./config.js','./lang.js','./app.js','./styles.css','./manifest.json'];
+self.addEventListener('install',function(e){e.waitUntil(caches.open(CACHE_NAME).then(function(c){return c.addAll(ASSETS);}));self.skipWaiting();});
+self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(names){return Promise.all(names.filter(function(n){return n!==CACHE_NAME;}).map(function(n){return caches.delete(n);}));}));self.clients.claim();});
+self.addEventListener('fetch',function(e){if(e.request.method!=='GET')return;if(e.request.url.includes('cdnjs.cloudflare.com')){e.respondWith(fetch(e.request).catch(function(){return caches.match(e.request);}));return;}e.respondWith(caches.match(e.request).then(function(cached){if(cached){fetch(e.request).then(function(resp){if(resp&&resp.status===200)caches.open(CACHE_NAME).then(function(c){c.put(e.request,resp.clone());});}).catch(function(){});return cached;}return fetch(e.request).then(function(resp){if(resp&&resp.status===200){var cl=resp.clone();caches.open(CACHE_NAME).then(function(c){c.put(e.request,cl);});}return resp;});}));});
