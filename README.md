@@ -23,3 +23,6 @@ Version 1.3.0:
 
 Version 1.4.0:
  - Colouring exercises depending on number of repetitions
+
+Version 1.5.0:
+ - Add settings for adding new exercies
