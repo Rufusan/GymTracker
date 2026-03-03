@@ -1,4 +1,4 @@
-var CACHE_NAME='gym-tracker-v4';
+var CACHE_NAME='gym-tracker-v5';
 var ASSETS=['./','./index.html','./training.html','./config.js','./lang.js','./app.js','./styles.css','./manifest.json'];
 self.addEventListener('install',function(e){e.waitUntil(caches.open(CACHE_NAME).then(function(c){return c.addAll(ASSETS);}));self.skipWaiting();});
 self.addEventListener('activate',function(e){e.waitUntil(caches.keys().then(function(names){return Promise.all(names.filter(function(n){return n!==CACHE_NAME;}).map(function(n){return caches.delete(n);}));}));self.clients.claim();});
