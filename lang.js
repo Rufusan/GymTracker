@@ -1,5 +1,6 @@
 const TRANSLATIONS = {
     pl: {
+		total_exercises_label: 'Liczba ćwiczeń:',
         language_name:'Polski',language_flag:'🇵🇱',html_lang:'pl',app_title:'Dziennik Treningowy',app_title_emoji:'🏋️ Dziennik Treningowy',
         btn_add_training:'+ Dodaj trening',btn_edit:'✎ Edytuj',btn_pdf:'⤓ PDF',btn_delete:'✕ Usuń',btn_filters:'🔍 Filtry',btn_data:'💾 Dane',btn_save:'Zapisz',btn_cancel:'Anuluj',
         btn_add_exercise:'+ Dodaj ćwiczenie',btn_delete_exercise_title:'Usuń ćwiczenie',back_to_trainings:'← Powrót do treningów',
@@ -67,6 +68,7 @@ const TRANSLATIONS = {
         ex_swimming:'Pływanie',ex_burpees:'Burpees'
     },
     en: {
+		total_exercises_label: 'Total exercises:',
         language_name:'English',language_flag:'🇬🇧',html_lang:'en',app_title:'Gym Tracker',app_title_emoji:'🏋️ Gym Tracker',
         btn_add_training:'+ Add Training',btn_edit:'✎ Edit',btn_pdf:'⤓ PDF',btn_delete:'✕ Delete',btn_filters:'🔍 Filters',btn_data:'💾 Data',btn_save:'Save',btn_cancel:'Cancel',
         btn_add_exercise:'+ Add Exercise',btn_delete_exercise_title:'Delete exercise',back_to_trainings:'← Back to Trainings',
