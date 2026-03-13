@@ -37,6 +37,34 @@ function applyOrientation(mode){
 }
 applyOrientation(getOrientation());
 
+function parseLoadNumber(load){
+    if(!load)return 0;
+    var m=String(load).match(/[\d.,]+/);
+    if(!m)return 0;
+    return parseFloat(m[0].replace(',','.'))||0;
+}
+function findPreviousExercise(currentTrainingId,exerciseName,exerciseType){
+    if(!exerciseName||!exerciseType)return null;
+    var all=getTrainings();
+    var current=all.find(function(x){return x.id===currentTrainingId;});
+    if(!current)return null;
+    var others=all.filter(function(x){return x.id!==currentTrainingId&&x.date<=current.date;});
+    others.sort(function(a,b){return a.date>b.date?-1:a.date<b.date?1:0;});
+    for(var i=0;i<others.length;i++){
+        var tr=others[i];
+        for(var j=0;j<tr.exercises.length;j++){
+            var ex=tr.exercises[j];
+            if(ex.name===exerciseName&&ex.type===exerciseType)return ex;
+        }
+    }
+    return null;
+}
+function compareArrow(current,previous){
+    if(current>previous)return' <span class="compare-arrow up">▲</span>';
+    if(current<previous)return' <span class="compare-arrow down">▼</span>';
+    return'';
+}
+
 function initSettings(){
     var btn=document.getElementById('settingsToggleBtn');
     var overlay=document.getElementById('settingsOverlay');
@@ -53,23 +81,20 @@ function initSettings(){
     document.getElementById('settingsExNameInput').placeholder=t('settings_exercise_name_placeholder');
     function open(){overlay.classList.add('open');}
     function close(){overlay.classList.remove('open');}
-    btn.addEventListener('click',open);
-    closeBtn.addEventListener('click',close);
+    btn.addEventListener('click',open);closeBtn.addEventListener('click',close);
     overlay.addEventListener('click',function(e){if(e.target===overlay)close();});
     document.addEventListener('keydown',function(e){if(e.key==='Escape'&&overlay.classList.contains('open'))close();});
     var bL=document.getElementById('themeBtnLight');var bD=document.getElementById('themeBtnDark');
     function updTh(){var a=getActiveTheme();bL.classList.toggle('active',a==='light');bD.classList.toggle('active',a==='dark');}
     bL.addEventListener('click',function(){applyTheme('light');updTh();});
-    bD.addEventListener('click',function(){applyTheme('dark');updTh();});
-    updTh();
+    bD.addEventListener('click',function(){applyTheme('dark');updTh();});updTh();
     var aLang=getActiveLanguage();langSw.innerHTML='';
     CONFIG.AVAILABLE_LANGUAGES.forEach(function(code){var lang=TRANSLATIONS[code];if(!lang)return;var b=document.createElement('button');b.className='lang-btn';if(code===aLang)b.classList.add('active');b.innerHTML='<span class="lang-btn-flag">'+lang.language_flag+'</span>';b.title=lang.language_name;b.addEventListener('click',function(){if(code!==aLang)setLanguage(code);});langSw.appendChild(b);});
     var oP=document.getElementById('orientBtnPortrait');var oA=document.getElementById('orientBtnAuto');var oL=document.getElementById('orientBtnLandscape');
     function updOrient(){var cur=getOrientation();oP.classList.toggle('active',cur==='portrait');oA.classList.toggle('active',cur==='auto');oL.classList.toggle('active',cur==='landscape');}
     oP.addEventListener('click',function(){applyOrientation('portrait');updOrient();});
     oA.addEventListener('click',function(){applyOrientation('auto');updOrient();});
-    oL.addEventListener('click',function(){applyOrientation('landscape');updOrient();});
-    updOrient();
+    oL.addEventListener('click',function(){applyOrientation('landscape');updOrient();});updOrient();
     var catSelect=document.getElementById('settingsExCategorySelect');var nameInput=document.getElementById('settingsExNameInput');var addExBtn=document.getElementById('settingsExAddBtn');var exList=document.getElementById('settingsExList');
     catSelect.innerHTML='<option value="">'+t('settings_select_category')+'</option>';
     Object.keys(CONFIG.EXERCISE_DATA).forEach(function(ck){var opt=document.createElement('option');opt.value=ck;opt.textContent=tCategory(ck);catSelect.appendChild(opt);});
@@ -105,7 +130,6 @@ function initIndexPage(){
     var dBar=document.getElementById('dataBar');var tDBtn=document.getElementById('toggleDataBtn');
     var iModal=document.getElementById('importModal');var iDet=document.getElementById('importDetail');var iFile=document.getElementById('importFileInput');
     var editingId=null,pendingImport=null;var sortCol=CONFIG.DEFAULT_SORT_COLUMN,sortDir=CONFIG.DEFAULT_SORT_DIRECTION;var sel=new Set();
-
     document.title=t('app_title');document.querySelector('h1').textContent=t('app_title_emoji');
     document.getElementById('addTrainingBtn').textContent=t('btn_add_training');
     editBtn.innerHTML=t('btn_edit');pdfBtn.innerHTML=t('btn_pdf');delBtn.innerHTML=t('btn_delete');
@@ -143,7 +167,6 @@ function initIndexPage(){
     document.getElementById('importMergeBtn').addEventListener('click',function(){if(!pendingImport)return;importData(pendingImport,'merge');iModal.classList.remove('active');pendingImport=null;sel.clear();render();});
     document.getElementById('importReplaceBtn').addEventListener('click',function(){if(!pendingImport)return;importData(pendingImport,'replace');iModal.classList.remove('active');pendingImport=null;sel.clear();render();});
     iModal.addEventListener('click',function(e){if(e.target===iModal){iModal.classList.remove('active');pendingImport=null;}});
-
     function filtered(){
         var ts=getTrainings();var q=fN.value.trim().toLowerCase();
         if(q)ts=ts.filter(function(x){return x.name.toLowerCase().includes(q);});
@@ -162,8 +185,7 @@ function initIndexPage(){
     function fmtD(ds){var d=new Date(ds+'T00:00:00');return window.innerWidth<=480?d.toLocaleDateString(dateLocale(),{month:'short',day:'numeric'}):d.toLocaleDateString(dateLocale(),{year:'numeric',month:'short',day:'numeric'});}
     function updSel(){
         var c=sel.size,has=getTrainings().length>0;
-        pdfBtn.style.display=has?'':'none';pdfBtn.disabled=!c;
-        editBtn.style.display=has?'':'none';editBtn.disabled=c!==1;
+        pdfBtn.style.display=has?'':'none';pdfBtn.disabled=!c;editBtn.style.display=has?'':'none';editBtn.disabled=c!==1;
         delBtn.style.display=has?'':'none';delBtn.disabled=!c;
         if(c){selBar.classList.add('visible');selCnt.textContent=t('selection_count',{count:c});}else selBar.classList.remove('visible');
         var vis=filtered();var allS=vis.length&&vis.every(function(x){return sel.has(x.id);});var someS=vis.some(function(x){return sel.has(x.id);});
@@ -180,7 +202,6 @@ function initIndexPage(){
     }
     function openM(tr){if(tr){mTitle.textContent=t('modal_edit_training');nIn.value=tr.name;dIn.value=tr.date;wIn.value=tr.bodyWeight||'';editingId=tr.id;}else{mTitle.textContent=t('modal_add_training');nIn.value='';dIn.value=new Date().toISOString().split('T')[0];wIn.value='';editingId=null;}udh();modal.classList.add('active');nIn.focus();}
     function closeM(){modal.classList.remove('active');editingId=null;}
-
     function exportPDF(ids){
         var trainings=ids.map(function(id){return getTrainings().find(function(x){return x.id===id;});}).filter(Boolean);
         if(!trainings.length)return;trainings.sort(function(a,b){return new Date(a.date)-new Date(b.date);});
@@ -209,7 +230,6 @@ function initIndexPage(){
         var fn;if(trainings.length===1)fn=trainings[0].name.replace(/[^a-z0-9ąćęłńóśźż]/gi,'_').toLowerCase()+'_'+trainings[0].date+'.pdf';
         else fn=t('pdf_filename_prefix')+'_'+trainings.length+'_'+t('pdf_filename_suffix')+'.pdf';doc.save(fn);
     }
-
     document.getElementById('addTrainingBtn').addEventListener('click',function(){openM(null);});
     document.getElementById('cancelTrainingBtn').addEventListener('click',closeM);
     modal.addEventListener('click',function(e){if(e.target===modal)closeM();});
@@ -235,8 +255,8 @@ function initTrainingPage(){
     var fType=document.getElementById('filterType');var fEx=document.getElementById('filterExercise');
     var exFBar=document.getElementById('exerciseFiltersBar');var tExFBtn=document.getElementById('toggleExFiltersBtn');
     var avgEl=document.getElementById('trainingAvgRating');var weightEl=document.getElementById('trainingBodyWeight');
+    var totalExEl=document.getElementById('trainingTotalExercises');
     var exSortCol=null,exSortDir='asc';
-
     document.querySelector('.back-link').textContent=t('back_to_trainings');
     document.getElementById('addExerciseBtn').textContent=t('btn_add_exercise');
     tExFBtn.textContent=t('btn_filters');
@@ -256,9 +276,10 @@ function initTrainingPage(){
     tExFBtn.addEventListener('click',function(){exFBar.classList.toggle('collapsed');tExFBtn.classList.toggle('active');});
 
     function getTr(){return getTrainings().find(function(x){return x.id===trainingId;});}
-    function renderHeader(){var tr=getTr();if(!tr){window.location.href='index.html';return;}document.getElementById('trainingTitle').textContent='🏋️ '+tr.name;document.getElementById('trainingDate').textContent=new Date(tr.date+'T00:00:00').toLocaleDateString(dateLocale(),{weekday:'long',year:'numeric',month:'long',day:'numeric'});document.title=tr.name+' - '+t('app_title');updAvg();updWeight();}
+    function renderHeader(){var tr=getTr();if(!tr){window.location.href='index.html';return;}document.getElementById('trainingTitle').textContent=tr.name;document.getElementById('trainingDate').textContent=new Date(tr.date+'T00:00:00').toLocaleDateString(dateLocale(),{weekday:'long',year:'numeric',month:'long',day:'numeric'});document.title=tr.name+' - '+t('app_title');updAvg();updWeight();updTotalEx();}
     function updAvg(){var tr=getTr();if(!tr)return;var avg=getAverageRating(tr);if(!tr.exercises.length||avg===0)avgEl.innerHTML='<span class="avg-label">'+t('avg_rating_label')+'</span> <span class="avg-no-data">'+t('avg_no_data')+'</span>';else avgEl.innerHTML='<span class="avg-label">'+t('avg_rating_label')+'</span> '+renderStarsReadonly(avg)+' <span class="avg-value">('+avg.toFixed(1)+'/'+CONFIG.MAX_STARS+')</span>';}
     function updWeight(){var tr=getTr();if(!tr)return;if(tr.bodyWeight)weightEl.innerHTML='<span class="weight-label">'+t('body_weight_label')+'</span> <span class="weight-value">'+tr.bodyWeight+' '+t('weight_unit')+'</span>';else weightEl.innerHTML='';}
+    function updTotalEx(){var tr=getTr();if(!tr||!totalExEl)return;totalExEl.innerHTML='<span class="total-ex-label">'+t('total_exercises_label')+'</span> <span class="total-ex-value">'+tr.exercises.length+'</span>';}
     function popTypeFilter(){var cur=fType.value;fType.innerHTML='<option value="">'+t('filter_all_types')+'</option>';Object.keys(EXDATA).forEach(function(type){var o=document.createElement('option');o.value=type;o.textContent=type;fType.appendChild(o);});fType.value=cur;}
     function buildTypeOpts(s){var h='<option value="">'+t('select_type_placeholder')+'</option>';Object.keys(EXDATA).forEach(function(type){h+='<option value="'+type+'" '+(type===s?'selected':'')+'>'+type+'</option>';});return h;}
     function buildExOpts(type,s){var h='<option value="">'+t('select_exercise_placeholder')+'</option>';if(type&&EXDATA[type])EXDATA[type].forEach(function(n){h+='<option value="'+n+'" '+(n===s?'selected':'')+'>'+n+'</option>';});return h;}
@@ -277,25 +298,47 @@ function initTrainingPage(){
     function updExSort(){['sortIconType','sortIconExName','sortIconExRating','sortIconExTotal','sortIconExLoad'].forEach(function(id){document.getElementById(id).textContent='';});if(!exSortCol)return;var map={type:'sortIconType',name:'sortIconExName',rating:'sortIconExRating',total:'sortIconExTotal',load:'sortIconExLoad'};if(map[exSortCol])document.getElementById(map[exSortCol]).textContent=exSortDir==='asc'?'▲':'▼';}
     function buildStars(r,idx){var h='<div class="star-rating-interactive" data-index="'+idx+'">';for(var i=1;i<=CONFIG.MAX_STARS;i++)h+='<span class="star-btn '+(i<=r?'star-active':'')+'" data-star="'+i+'" data-index="'+idx+'">★</span>';return h+'</div>';}
 
+    function getLoadArrowHtml(idx){
+        var tr=getTr();if(!tr||!tr.exercises[idx])return'';
+        var ex=tr.exercises[idx];
+        var prev=findPreviousExercise(trainingId,ex.name,ex.type);
+        if(!prev)return'';
+        var curLoad=parseLoadNumber(ex.load);var prevLoad=parseLoadNumber(prev.load);
+        if(curLoad>0&&prevLoad>0)return compareArrow(curLoad,prevLoad);
+        return'';
+    }
+    function getTotalArrowHtml(idx){
+        var tr=getTr();if(!tr||!tr.exercises[idx])return'';
+        var ex=tr.exercises[idx];var total=getTotalReps(ex);
+        var prev=findPreviousExercise(trainingId,ex.name,ex.type);
+        if(!prev)return'';
+        var prevTotal=getTotalReps(prev);
+        if(total>0&&prevTotal>0)return compareArrow(total,prevTotal);
+        return'';
+    }
+
     function renderEx(){
         var tr=getTr();if(!tr)return;exBody.innerHTML='';tExFBtn.style.display=tr.exercises.length?'':'none';
         var exs=getFilteredEx(tr);var totalCount=tr.exercises.length;var isFiltered=exSortCol||fType.value||fEx.value.trim();
-        if(!exs.length){empty.style.display='block';empty.textContent=!tr.exercises.length?t('empty_no_exercises'):t('empty_no_exercise_filter_match');document.getElementById('exercisesTable').style.display='none';return;}
+        if(!exs.length){empty.style.display='block';empty.textContent=!tr.exercises.length?t('empty_no_exercises'):t('empty_no_exercise_filter_match');document.getElementById('exercisesTable').style.display='none';updTotalEx();return;}
         empty.style.display='none';document.getElementById('exercisesTable').style.display='table';updExSort();
         exs.forEach(function(ex){
             var i=ex._idx;var row=document.createElement('tr');row.dataset.index=i;
             var s=ex.series||[];var total=getTotalReps(ex);var repsClass=getRepsClass(total,ex.type);
+            var loadArrow=getLoadArrowHtml(i);
+            var totalArrow=getTotalArrowHtml(i);
             var seriesH='';for(var si=0;si<CONFIG.MAX_SERIES;si++)seriesH+='<td class="td-series"><input type="number" class="inline-input inline-series" data-index="'+i+'" data-series="'+si+'" min="0" placeholder="-" value="'+(s[si]!=null?s[si]:'')+'"></td>';
             var moveH='<td class="td-order">';
             if(!isFiltered){moveH+='<button class="move-btn move-up" data-index="'+i+'" title="'+t('move_up_title')+'" '+(i===0?'disabled':'')+'>▲</button>';moveH+='<button class="move-btn move-down" data-index="'+i+'" title="'+t('move_down_title')+'" '+(i===totalCount-1?'disabled':'')+'>▼</button>';}
             moveH+='</td>';
-            row.innerHTML=moveH+'<td class="td-type '+repsClass+'"><select class="inline-select inline-type" data-index="'+i+'">'+buildTypeOpts(ex.type)+'</select></td><td class="td-name '+repsClass+'"><select class="inline-select inline-name" data-index="'+i+'">'+buildExOpts(ex.type,ex.name)+'</select></td><td class="td-load"><input type="text" class="inline-input inline-load" data-index="'+i+'" placeholder="'+t('load_placeholder')+'" value="'+escapeHtml(ex.load||'')+'"></td>'+seriesH+'<td class="td-total" data-index="'+i+'">'+(total>0?total:'-')+'</td><td class="td-rating-interactive">'+buildStars(ex.rating||0,i)+'</td><td class="td-action"><button class="btn btn-small btn-delete btn-delete-row" data-index="'+i+'" title="'+t('btn_delete_exercise_title')+'">✕</button></td>';
-            exBody.appendChild(row);});updAvg();
+            row.innerHTML=moveH+'<td class="td-type '+repsClass+'"><select class="inline-select inline-type" data-index="'+i+'">'+buildTypeOpts(ex.type)+'</select></td><td class="td-name '+repsClass+'"><select class="inline-select inline-name" data-index="'+i+'">'+buildExOpts(ex.type,ex.name)+'</select></td><td class="td-load"><span class="load-arrow" data-index="'+i+'">'+loadArrow+'</span><input type="text" class="inline-input inline-load" data-index="'+i+'" placeholder="'+t('load_placeholder')+'" value="'+escapeHtml(ex.load||'')+'"></td>'+seriesH+'<td class="td-total" data-index="'+i+'">'+(total>0?total+totalArrow:'-')+'</td><td class="td-rating-interactive">'+buildStars(ex.rating||0,i)+'</td><td class="td-action"><button class="btn btn-small btn-delete btn-delete-row" data-index="'+i+'" title="'+t('btn_delete_exercise_title')+'">✕</button></td>';
+            exBody.appendChild(row);});updAvg();updTotalEx();
     }
 
     function updTotal(idx){
         var tr=getTr();if(!tr||!tr.exercises[idx])return;var total=getTotalReps(tr.exercises[idx]);
-        var cell=exBody.querySelector('.td-total[data-index="'+idx+'"]');if(cell)cell.textContent=total>0?total:'-';
+        var totalArrow=getTotalArrowHtml(idx);
+        var cell=exBody.querySelector('.td-total[data-index="'+idx+'"]');if(cell)cell.innerHTML=total>0?total+totalArrow:'-';
         var repsClass=getRepsClass(total,tr.exercises[idx].type);
         var row=exBody.querySelector('tr[data-index="'+idx+'"]');
         if(row){var tc=row.querySelector('.td-type');var nc=row.querySelector('.td-name');
@@ -303,11 +346,16 @@ function initTrainingPage(){
             if(nc){nc.classList.remove('reps-red','reps-orange','reps-green','reps-purple');if(repsClass)nc.classList.add(repsClass);}
         }
     }
+    function updLoadArrow(idx){
+        var span=exBody.querySelector('.load-arrow[data-index="'+idx+'"]');
+        if(span)span.innerHTML=getLoadArrowHtml(idx);
+    }
+
     function saveField(idx,field,val){
         var ts=getTrainings();var tr=ts.find(function(x){return x.id===trainingId;});if(!tr||!tr.exercises[idx])return;
         if(field==='type'){tr.exercises[idx].type=val;tr.exercises[idx].name='';saveTrainings(ts);renderEx();}
-        else if(field==='name'){tr.exercises[idx].name=val;saveTrainings(ts);}
-        else if(field==='load'){tr.exercises[idx].load=val;saveTrainings(ts);}
+        else if(field==='name'){tr.exercises[idx].name=val;saveTrainings(ts);renderEx();}
+        else if(field==='load'){tr.exercises[idx].load=val;saveTrainings(ts);updLoadArrow(idx);}
         else if(field==='series'){tr.exercises[idx].series=normalizeSeries(tr.exercises[idx].series);tr.exercises[idx].series[val.si]=val.reps!==''?parseInt(val.reps):null;saveTrainings(ts);updTotal(idx);}
         else if(field==='rating'){tr.exercises[idx].rating=val;saveTrainings(ts);updAvg();}
     }
